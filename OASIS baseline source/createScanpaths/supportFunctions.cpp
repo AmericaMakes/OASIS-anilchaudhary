@@ -19,8 +19,7 @@ for file, folder and executable operations.
 
 #include "supportFunctions.h"
 
-namespace fs = std::experimental::filesystem;
-
+namespace fs = std::filesystem;
 
 // remove any "orphan" status and output files from previous runs in the execution directory
 bool cleanupOnStart()

@@ -20,7 +20,7 @@ used by createScanpaths.cpp and/or supportFunctions.cpp
 #include "io_functions.h"
 #include "readExcelConfig.h"
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 
 
 COORD GetConsoleCursorPosition(HANDLE hConsoleOutput)
