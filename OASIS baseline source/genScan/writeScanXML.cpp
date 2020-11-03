@@ -174,21 +174,21 @@ CleanUp:
 	return hr;
 }
 
-vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int layerNum)
+std::vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int layerNum)
 {
 	// This routine identifies trajectories found in the current layer (corresponding to actual parts, not single stripes), and
 	// adds in one or more trajectories for single-stripes, if they are included in this layer.
 	// L.s is the slice structure which contains a list of regions, rList.
 	trajectory t;  // placeholder for a single trajectory and its regions
-	vector<trajectory> tl;	// output:  list of all trajectories and their regions
-	vector<int> tlValues; // temp variable which lists the trajNum values in tl for easy reference
+	std::vector<trajectory> tl;	// output:  list of all trajectories and their regions
+	std::vector<int> tlValues; // temp variable which lists the trajNum values in tl for easy reference
 	int index;
 	#if printTrajectories
 		cout << "Total number of regions " << L.s.rList.size() << endl;
 	#endif
 
 	// 1. Determine if there are any single stripes on this layer.  If so, identify their trajectory#'s and add to trajectoryList
-	vector<int> stripeTrajectoriesThisLayer;
+		std::vector<int> stripeTrajectoriesThisLayer;
 	if (configData.allStripesMarked == false)
 	{
 		stripeTrajectoriesThisLayer = singleStripeCount(layerNum, configData);
@@ -212,10 +212,10 @@ vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int laye
 
 	// 2. Iterate across the regions found in a layer and record their trajectory#'s.
 	// Within r we refer to contourTraj and hatchTraj to identify trajectories
-	for (vector<region>::iterator r = L.s.rList.begin(); r != L.s.rList.end(); ++r)
+	for (std::vector<region>::iterator r = L.s.rList.begin(); r != L.s.rList.end(); ++r)
 	{	
 		#if printTrajectories
-			cout << "Looking for contourTraj#" << (*r).contourTraj << endl;
+			std::cout << "Looking for contourTraj#" << (*r).contourTraj << std::endl;
 		#endif
 		// 1a. See if r.contourTraj exists in tl.trajNum values.
 		std::vector<int>::iterator it = std::find(tlValues.begin(), tlValues.end(), (*r).contourTraj);
@@ -228,7 +228,7 @@ vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int laye
 			tl[index].trajRegionIsHatched.push_back(false);
 			tl[index].trajRegionLinks.push_back(&*r);
 			#if printTrajectories
-				cout << "  Added region " << std::distance(L.s.rList.begin(), r) << " to trajectory " << tl[index].trajectoryNum << endl;
+				std::cout << "  Added region " << std::distance(L.s.rList.begin(), r) << " to trajectory " << tl[index].trajectoryNum << std::endl;
 			#endif
 		}
 		else
@@ -248,13 +248,13 @@ vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int laye
 			t.trajRegionLinks.push_back(&*r);
 			tl.push_back(t);
 			#if printTrajectories
-				cout << "  Defined trajectory number " << t.trajectoryNum << endl;
+				std::cout << "  Defined trajectory number " << t.trajectoryNum << std::endl;
 			#endif
 		}
 
 		// 2a. See if r.hatchTraj exists in tl.trajNum values
 		#if printTrajectories
-			cout << "Looking for hatchTraj#" << (*r).hatchTraj << endl;
+			std::cout << "Looking for hatchTraj#" << (*r).hatchTraj << std::endl;
 		#endif
 		it = std::find(tlValues.begin(), tlValues.end(), (*r).hatchTraj);
 		if (it != tlValues.end())
@@ -266,7 +266,7 @@ vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int laye
 			tl[index].trajRegionIsHatched.push_back(false);
 			tl[index].trajRegionLinks.push_back(&*r);
 			#if printTrajectories
-				cout << "  Added region " << std::distance((*L).s.rList.begin(), r) << " to trajectory " << tl[index].trajectoryNum << endl;
+				std::cout << "  Added region " << std::distance((*L).s.rList.begin(), r) << " to trajectory " << tl[index].trajectoryNum << std::endl;
 			#endif
 		}
 		else
@@ -286,13 +286,13 @@ vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int laye
 			t.trajRegionLinks.push_back(&*r);
 			tl.push_back(t);
 			#if printTrajectories
-				cout << "  Defined trajectory number " << t.trajectoryNum << endl;
+				std::cout << "  Defined trajectory number " << t.trajectoryNum << std::endl;
 			#endif
 		}  // end else hatchTraj
 	}  // end for r
 	
 	// 3. After generating tl, match each trajectory# to a processing instruction in trajProcList, or assign "sequential" if not found
-	for (vector<trajectory>::iterator itl = tl.begin(); itl != tl.end(); ++itl)
+	for (std::vector<trajectory>::iterator itl = tl.begin(); itl != tl.end(); ++itl)
 	{
 		(*itl).pathProcessingMode = "sequential";
 		// See if (*itl).trajNum is found in (*inputConfig).trajProcList
@@ -308,7 +308,7 @@ vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int laye
 }
 
 
-void createSCANxmlFile(string fullXMLpath, int layerNum, AMconfig &configData, vector<trajectory> &trajectoryList)
+void createSCANxmlFile(std::string fullXMLpath, int layerNum, AMconfig &configData, std::vector<trajectory> &trajectoryList)
 {
 	// 1. initialization and setup
 
@@ -319,7 +319,7 @@ void createSCANxmlFile(string fullXMLpath, int layerNum, AMconfig &configData, v
 	BSTR bstrXML = NULL;
 	VARIANT varFileName;
 	VariantInit(&varFileName);
-	wstring wfn(fullXMLpath.begin(), fullXMLpath.end());
+	std::wstring wfn(fullXMLpath.begin(), fullXMLpath.end());
 	LPCWSTR  wszValue = wfn.c_str();
 
 	// Initialize the Domain Object Model (DOM) and define root element, pRoot
@@ -379,8 +379,8 @@ void addXMLheader(IXMLDOMElement *pRoot, int layerNum, double thickness, double 
 {
 	// Temporary vars and definitions
 	HRESULT hr = S_OK;
-	string st;
-	wstring ws;
+	std::string st;
+	std::wstring ws;
 	IXMLDOMElement *headerNode = NULL;
 	IXMLDOMElement *layerNumNode = NULL;
 	IXMLDOMElement *layerHeightNode = NULL;
@@ -394,21 +394,21 @@ void addXMLheader(IXMLDOMElement *pRoot, int layerNum, double thickness, double 
 
 	// Create schema version field
 	CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"AmericaMakesSchemaVersion", L"\n\t", headerNode, &schemaVersionNode));
-	ws = wstring(schemaVersion.begin(), schemaVersion.end());
+	ws = std::wstring(schemaVersion.begin(), schemaVersion.end());
 	CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), schemaVersionNode));
 	SAFE_RELEASE(schemaVersionNode);
 
 	// Create layer number field
 	CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"LayerNum", L"\n\t", headerNode, &layerNumNode));
-	st = to_string(layerNum);
-	ws = wstring(st.begin(), st.end());
+	st = std::to_string(layerNum);
+	ws = std::wstring(st.begin(), st.end());
 	CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), layerNumNode));
 	SAFE_RELEASE(layerNumNode);
 
 	// Create layer thickness field
 	CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"LayerThickness", L"\n\t", headerNode, &thicknessNode));
 	st = d2s((double)thickness);
-	ws = wstring(st.begin(), st.end());
+	ws = std::wstring(st.begin(), st.end());
 	CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), thicknessNode));
 	SAFE_RELEASE(thicknessNode);
 
@@ -416,14 +416,14 @@ void addXMLheader(IXMLDOMElement *pRoot, int layerNum, double thickness, double 
 	// (In this scanpath code we use constant layer height, so cumulative height = layerNum * thickness)
 	CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"AbsoluteHeight", L"\n\t", headerNode, &layerHeightNode));
 	st = d2s((double)(thickness*layerNum));
-	ws = wstring(st.begin(), st.end());
+	ws = std::wstring(st.begin(), st.end());
 	CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), layerHeightNode));
 	SAFE_RELEASE(layerHeightNode);
 
 	// Create dosing factor field
 	CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"DosingFactor", L"\n\t", headerNode, &dosingFactorNode));
 	st = d2s((double)dosingfactor);
-	ws = wstring(st.begin(), st.end());
+	ws = std::wstring(st.begin(), st.end());
 	CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), dosingFactorNode));
 	SAFE_RELEASE(dosingFactorNode);
 
@@ -449,8 +449,8 @@ void addXMLvelocityProfileList(IXMLDOMElement *pRoot, AMconfig &configData)
 
 	// Temporary vars and definitions
 	HRESULT hr = S_OK;
-	string st;
-	wstring ws;
+	std::string st;
+	std::wstring ws;
 	// Define velocity profile elements
 	IXMLDOMElement *VlNode = NULL;
 	IXMLDOMElement *VPNode = NULL;
@@ -465,7 +465,7 @@ void addXMLvelocityProfileList(IXMLDOMElement *pRoot, AMconfig &configData)
 
 	// Create velocity profile section
 	CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"VelocityProfileList", L"\n", pRoot, &VlNode));
-	for (vector<velocityProfile>::iterator it = (configData.VPlist).begin(); it != (configData.VPlist).end(); ++it)
+	for (std::vector<velocityProfile>::iterator it = (configData.VPlist).begin(); it != (configData.VPlist).end(); ++it)
 	{
 		if ((*it).isUsed == true)	// only output the profiles which are actually used in the build and/or this specific layer
 		{
@@ -473,54 +473,54 @@ void addXMLvelocityProfileList(IXMLDOMElement *pRoot, AMconfig &configData)
 
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"ID", L"", VPNode, &idNode));
 			if (configData.outputIntegerIDs == true) {  // determine whether to output the original velocity profile ID string or an auto-generated integer ID
-				st = to_string((*it).integerID);
+				st = std::to_string((*it).integerID);
 			}
 			else {
 				st = (*it).ID;
 			}
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), idNode));
 			SAFE_RELEASE(idNode);
 			
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Velocity", L"\n\t\t", VPNode, &VNode));
 			st = d2s((*it).velocity);
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), VNode));
 			SAFE_RELEASE(VNode);
 			
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Mode", L"", VPNode, &mNode));
 			st = (*it).mode;
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), mNode));
 			SAFE_RELEASE(mNode);
 
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"LaserOnDelay", L"\n\t\t", VPNode, &tv1Node));
 			st = d2s((*it).laserOnDelay);
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), tv1Node));
 			SAFE_RELEASE(tv1Node);
 
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"LaserOffDelay", L"", VPNode, &tv2Node));
 			st = d2s((*it).laserOffDelay);
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), tv2Node));
 			SAFE_RELEASE(tv2Node);
 
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"JumpDelay", L"", VPNode, &tl1Node));
 			st = d2s((*it).jumpDelay);
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), tl1Node));
 			SAFE_RELEASE(tl1Node);
 
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"MarkDelay", L"\n\t\t", VPNode, &tl2Node));
 			st = d2s((*it).markDelay);
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), tl2Node));
 			SAFE_RELEASE(tl2Node);
 
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"PolygonDelay", L"", VPNode, &tl3Node));
 			st = d2s((*it).polygonDelay);
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), tl3Node));
 			SAFE_RELEASE(tl3Node);
 
@@ -541,8 +541,8 @@ void addXMLsegmentStyleList(IXMLDOMElement *pRoot, AMconfig &configData)
 
 	// Temporary vars and definitions
 	HRESULT hr = S_OK;
-	string st;
-	wstring ws;
+	std::string st;
+	std::wstring ws;
 	// Define segment style elements
 	IXMLDOMElement *SsListNode = NULL;
 	IXMLDOMElement *SsNode = NULL;
@@ -573,7 +573,7 @@ void addXMLsegmentStyleList(IXMLDOMElement *pRoot, AMconfig &configData)
 	*/
 	// Define the segment style list node
 	CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"SegmentStyleList", L"\n", pRoot, &SsListNode));
-	for (vector<segmentStyle>::iterator it = (configData.segmentStyleList).begin(); it != (configData.segmentStyleList).end(); ++it)
+	for (std::vector<segmentStyle>::iterator it = (configData.segmentStyleList).begin(); it != (configData.segmentStyleList).end(); ++it)
 	{
 		if ((*it).isUsed == true)	// only output the styles which are actually used in the build and/or this specific layer
 		{
@@ -582,23 +582,23 @@ void addXMLsegmentStyleList(IXMLDOMElement *pRoot, AMconfig &configData)
 
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"ID", L"", SsNode, &SSIdNode));
 			if (configData.outputIntegerIDs == true) {  // determine whether to output the original segment style ID string or an auto-generated integer ID
-				st = to_string((*it).integerID);
+				st = std::to_string((*it).integerID);
 			}
 			else {
 				st = (*it).ID;
 			}
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), SSIdNode));
 			SAFE_RELEASE(SSIdNode);
 
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"VelocityProfileID", L"\n\t\t", SsNode, &VpIdNode));
 			if (configData.outputIntegerIDs == true) {  // determine whether to output the velocity profile ID string, or the auto-generated integer ID
-				st = to_string((*it).vpIntID);
+				st = std::to_string((*it).vpIntID);
 			}
 			else {
 				st = (*it).vpID;
 			}
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), VpIdNode));
 			SAFE_RELEASE(VpIdNode);
 
@@ -606,7 +606,7 @@ void addXMLsegmentStyleList(IXMLDOMElement *pRoot, AMconfig &configData)
 			{
 				CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"LaserMode", L"", SsNode, &LaserModeNode));
 				st = (*it).laserMode;
-				ws = wstring(st.begin(), st.end());
+				ws = std::wstring(st.begin(), st.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), LaserModeNode));
 				SAFE_RELEASE(LaserModeNode);
 			}
@@ -619,25 +619,25 @@ void addXMLsegmentStyleList(IXMLDOMElement *pRoot, AMconfig &configData)
 
 				CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"ID", L"", TravelerNode, &TravIdNode));
 				st = (*it).leadLaser.travelerID;
-				ws = wstring(st.begin(), st.end());
+				ws = std::wstring(st.begin(), st.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), TravIdNode));
 				SAFE_RELEASE(TravIdNode);
 
 				CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"SyncDelay", L"\n\t\t\t", TravelerNode, &SyncDelayNode));
 				st = d2s((*it).leadLaser.syncOffset);
-				ws = wstring(st.begin(), st.end());
+				ws = std::wstring(st.begin(), st.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), SyncDelayNode));
 				SAFE_RELEASE(SyncDelayNode);
 
 				CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Power", L"", TravelerNode, &PowerNode));
 				st = d2s((*it).leadLaser.power);
-				ws = wstring(st.begin(), st.end());
+				ws = std::wstring(st.begin(), st.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), PowerNode));
 				SAFE_RELEASE(PowerNode);
 
 				CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"SpotSize", L"", TravelerNode, &SpotSizeNode));
 				st = d2s((*it).leadLaser.spotSize);
-				ws = wstring(st.begin(), st.end());
+				ws = std::wstring(st.begin(), st.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), SpotSizeNode));
 				SAFE_RELEASE(SpotSizeNode);
 
@@ -648,31 +648,31 @@ void addXMLsegmentStyleList(IXMLDOMElement *pRoot, AMconfig &configData)
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"On", L"", WobbleNode, &WobbleOnNode));
 					st = "1"; // 1 = wobble is on
-					ws = wstring(st.begin(), st.end());
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobbleOnNode));
 					SAFE_RELEASE(WobbleOnNode);
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Freq", L"", WobbleNode, &WobFreqNode));
 					st = d2s((*it).leadLaser.wobFrequency);
-					ws = wstring(st.begin(), st.end());
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobFreqNode));
 					SAFE_RELEASE(WobFreqNode);
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Shape", L"", WobbleNode, &WobShapeNode));
-					st = to_string((*it).leadLaser.wobShape);
-					ws = wstring(st.begin(), st.end());
+					st = std::to_string((*it).leadLaser.wobShape);
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobShapeNode));
 					SAFE_RELEASE(WobShapeNode);
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"TransAmp", L"", WobbleNode, &WobTransAmpNode));
 					st = d2s((*it).leadLaser.wobTransAmp);
-					ws = wstring(st.begin(), st.end());
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobTransAmpNode));
 					SAFE_RELEASE(WobTransAmpNode);
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"LongAmp", L"", WobbleNode, &WobLongAmpNode));
 					st = d2s((*it).leadLaser.wobLongAmp);
-					ws = wstring(st.begin(), st.end());
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobLongAmpNode));
 					SAFE_RELEASE(WobLongAmpNode);
 
@@ -688,25 +688,25 @@ void addXMLsegmentStyleList(IXMLDOMElement *pRoot, AMconfig &configData)
 
 				CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"ID", L"", TravelerNode, &TravIdNode));
 				st = (*it).trailLaser.travelerID;
-				ws = wstring(st.begin(), st.end());
+				ws = std::wstring(st.begin(), st.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), TravIdNode));
 				SAFE_RELEASE(TravIdNode);
 
 				CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"SyncDelay", L"\n\t\t\t", TravelerNode, &SyncDelayNode));
 				st = d2s((*it).trailLaser.syncOffset);
-				ws = wstring(st.begin(), st.end());
+				ws = std::wstring(st.begin(), st.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), SyncDelayNode));
 				SAFE_RELEASE(SyncDelayNode);
 
 				CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Power", L"", TravelerNode, &PowerNode));
 				st = d2s((*it).trailLaser.power);
-				ws = wstring(st.begin(), st.end());
+				ws = std::wstring(st.begin(), st.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), PowerNode));
 				SAFE_RELEASE(PowerNode);
 
 				CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"SpotSize", L"", TravelerNode, &SpotSizeNode));
 				st = d2s((*it).trailLaser.spotSize);
-				ws = wstring(st.begin(), st.end());
+				ws = std::wstring(st.begin(), st.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), SpotSizeNode));
 				SAFE_RELEASE(SpotSizeNode);
 
@@ -717,31 +717,31 @@ void addXMLsegmentStyleList(IXMLDOMElement *pRoot, AMconfig &configData)
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"On", L"", WobbleNode, &WobbleOnNode));
 					st = "1"; // 1 = wobble is on
-					ws = wstring(st.begin(), st.end());
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobbleOnNode));
 					SAFE_RELEASE(WobbleOnNode);
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Freq", L"", WobbleNode, &WobFreqNode));
 					st = d2s((*it).trailLaser.wobFrequency);
-					ws = wstring(st.begin(), st.end());
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobFreqNode));
 					SAFE_RELEASE(WobFreqNode);
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Shape", L"", WobbleNode, &WobShapeNode));
-					st = to_string((*it).trailLaser.wobShape);
-					ws = wstring(st.begin(), st.end());
+					st = std::to_string((*it).trailLaser.wobShape);
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobShapeNode));
 					SAFE_RELEASE(WobShapeNode);
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"TransAmp", L"", WobbleNode, &WobTransAmpNode));
 					st = d2s((*it).trailLaser.wobTransAmp);
-					ws = wstring(st.begin(), st.end());
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobTransAmpNode));
 					SAFE_RELEASE(WobTransAmpNode);
 
 					CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"LongAmp", L"", WobbleNode, &WobLongAmpNode));
 					st = d2s((*it).trailLaser.wobLongAmp);
-					ws = wstring(st.begin(), st.end());
+					ws = std::wstring(st.begin(), st.end());
 					CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), WobLongAmpNode));
 					SAFE_RELEASE(WobLongAmpNode);
 
@@ -766,8 +766,8 @@ void addXMLtrajectory(IXMLDOMElement *trajList, trajectory &T)
 	
 	// Temporary vars and definitions
 	HRESULT hr = S_OK;
-	wstring ws;
-	string st;
+	std::wstring ws;
+	std::string st;
 	int p = scanCoordPrecision;
 	
 	// Define trajectory elements
@@ -799,47 +799,47 @@ void addXMLtrajectory(IXMLDOMElement *trajList, trajectory &T)
 
 	// add trajectoryID
 	CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"TrajectoryID", L"\n\t", TNode, &tidNode));
-	st = to_string(T.trajectoryNum);
-	ws = wstring(st.begin(), st.end());
+	st = std::to_string(T.trajectoryNum);
+	ws = std::wstring(st.begin(), st.end());
 	CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), tidNode));
 	SAFE_RELEASE(tidNode);
 	
 	// add path processing mode
 	CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"PathProcessingMode", L"\n\t", TNode, &pathProcNode));
 	st = T.pathProcessingMode;
-	ws = wstring(st.begin(), st.end());
+	ws = std::wstring(st.begin(), st.end());
 	CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), pathProcNode));
 	SAFE_RELEASE(pathProcNode);
 
 	// Iterate over the paths within this trajectory
-	for (vector<path>::iterator pt = (T.vecPath).begin(); pt != (T.vecPath).end(); ++pt)
+	for (std::vector<path>::iterator pt = (T.vecPath).begin(); pt != (T.vecPath).end(); ++pt)
 	{
 		CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Path", L"\n\t", TNode, &ptNode));
 		// Add path type (hatch or contour)
 		CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Type", L"\n\t\t", ptNode, &tyNode));
 		st = (*pt).type;
-		ws = wstring(st.begin(), st.end());
+		ws = std::wstring(st.begin(), st.end());
 		CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), tyNode));
 		SAFE_RELEASE(tyNode);
 
 		// Add path tag
 		CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Tag", L"\n\t\t", ptNode, &tgNode));
 		st = (*pt).tag;
-		ws = wstring(st.begin(), st.end());
+		ws = std::wstring(st.begin(), st.end());
 		CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), tgNode));
 		SAFE_RELEASE(tgNode);
 
 		// Add number of segments
 		CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"NumSegments", L"\n\t\t", ptNode, &szNode));
-		st = to_string(((*pt).vecSg).size());
-		ws = wstring(st.begin(), st.end());
+		st = std::to_string(((*pt).vecSg).size());
+		ws = std::wstring(st.begin(), st.end());
 		CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), szNode));
 		SAFE_RELEASE(szNode);
 
 		// Add skywriting mode
 		CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"SkyWritingMode", L"\n\t\t", ptNode, &skyWrNode));
 		st = d2s((*pt).SkyWritingMode);
-		ws = wstring(st.begin(), st.end());
+		ws = std::wstring(st.begin(), st.end());
 		CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), skyWrNode));
 		SAFE_RELEASE(skyWrNode);
 
@@ -849,20 +849,20 @@ void addXMLtrajectory(IXMLDOMElement *trajList, trajectory &T)
 		std::stringstream startx;	// using stringstream allows us to set precision
 		startx << std::fixed << std::setprecision(p) << (((*pt).vecSg[0]).start).x;
 		st = startx.str();
-		ws = wstring(st.begin(), st.end());
+		ws = std::wstring(st.begin(), st.end());
 		CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), sxNode));
 		SAFE_RELEASE(sxNode);
 		CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Y", L"", stNode, &syNode));
 		std::stringstream starty;	// using stringstream allows us to set precision
 		starty << std::fixed << std::setprecision(p) << (((*pt).vecSg[0]).start).y;
 		st = starty.str();
-		ws = wstring(st.begin(), st.end());
+		ws = std::wstring(st.begin(), st.end());
 		CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), syNode));
 		SAFE_RELEASE(syNode);
 		SAFE_RELEASE(stNode);
 
 		// Add the list of segments
-		for (vector<segment>::iterator gt = ((*pt).vecSg).begin(); gt != ((*pt).vecSg).end(); ++gt)
+		for (std::vector<segment>::iterator gt = ((*pt).vecSg).begin(); gt != ((*pt).vecSg).end(); ++gt)
 		{
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"Segment", L"\n\t\t", ptNode, &svNode));
 /*			// SegmentID is currently omitted, since this program is not currently generating individual segment identifiers
@@ -875,7 +875,7 @@ void addXMLtrajectory(IXMLDOMElement *trajList, trajectory &T)
 			// Add segment style
 			CHK_HR(CreateAndAddElementNode(pXMLDomScan, L"SegStyle", L"", svNode, &segStyleNode));
 			st = (*gt).idSegStyl;  // a string containing the style's integer or string ID, as coded in hatch() or contour() functions
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), segStyleNode));
 			SAFE_RELEASE(segStyleNode);
 
@@ -886,7 +886,7 @@ void addXMLtrajectory(IXMLDOMElement *trajList, trajectory &T)
 			std::stringstream strx;	// using stringstream allows us to set precision
 			strx << std::fixed << std::setprecision(p) << ((*gt).end).x;
 			st = strx.str();
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), fxNode));
 			SAFE_RELEASE(fxNode);
 
@@ -894,7 +894,7 @@ void addXMLtrajectory(IXMLDOMElement *trajList, trajectory &T)
 			std::stringstream stry;	// using stringstream allows us to set precision
 			stry << std::fixed << std::setprecision(p) << ((*gt).end).y;
 			st = stry.str();
-			ws = wstring(st.begin(), st.end());
+			ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomScan, ws.c_str(), fyNode));
 			SAFE_RELEASE(fyNode);
 			SAFE_RELEASE(fNode);
@@ -912,7 +912,7 @@ CleanUp:
 }
 
 
-void scan2SVG(string fn, vector<trajectory> &tList, int dim, double mag, double xo, double yo)
+void scan2SVG(std::string fn, std::vector<trajectory> &tList, int dim, double mag, double xo, double yo)
 {
 	svg::Dimensions dimensions(dim, dim);
 	svg::Document doc(fn, svg::Layout(dimensions, svg::Layout::TopLeft));
@@ -927,11 +927,11 @@ void scan2SVG(string fn, vector<trajectory> &tList, int dim, double mag, double 
 	{
 		for (int i = 0; i < (int)(tList[t].vecPath).size(); i++)
 		{
-			vector<segment> SP = (tList[t].vecPath[i]).vecSg;
-			string type = (tList[t].vecPath[i]).type;
-			string tag = (tList[t].vecPath[i]).tag;
+			std::vector<segment> SP = (tList[t].vecPath[i]).vecSg;
+			std::string type = (tList[t].vecPath[i]).type;
+			std::string tag = (tList[t].vecPath[i]).tag;
 			s = SP[0].start;
-			for (vector<segment>::iterator it = SP.begin(); it != SP.end(); ++it)
+			for (std::vector<segment>::iterator it = SP.begin(); it != SP.end(); ++it)
 			{
 				f = (*it).end;
 				sx = s.x * mag + xo;
@@ -954,19 +954,19 @@ void scan2SVG(string fn, vector<trajectory> &tList, int dim, double mag, double 
 
 PCWSTR d2lp(double in)
 {
-	wstringstream wss;
+	std::wstringstream wss;
 	wss << in;
 	return (wss.str()).c_str();
 }
 
 PCWSTR i2lp(int in)
 {
-	wstringstream wss;
+	std::wstringstream wss;
 	wss << in;
 	return (wss.str()).c_str();
 }
 
-string d2s(double d)
+std::string d2s(double d)
 {
 	std::ostringstream oss;
 	oss.precision(std::numeric_limits<double>::digits10);

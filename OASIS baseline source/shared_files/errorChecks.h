@@ -39,9 +39,9 @@ to evaluate Excel configuration files in errorChecks.cpp
 struct errorCheckStructure
 {
 	bool errorFound = false;				// true if error identified which prevents execution
-	vector<string> missingConfigTabs = {};  // contains names of any config-file tabs which couldn't be found
-	string firstError = "";					// short string containing the first error encountered, to be displayed on screen
-	vector<string> fullErrorList = {};		// cumulative text of all error results identified
+	std::vector<std::string> missingConfigTabs = {};  // contains names of any config-file tabs which couldn't be found
+	std::string firstError = "";					// short string containing the first error encountered, to be displayed on screen
+	std::vector<std::string> fullErrorList = {};		// cumulative text of all error results identified
 };
 
 // Function to check configuration-file for errors.
@@ -52,13 +52,13 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData);
 // Function to update the error results structure.
 // Calling this function automatically sets errorFound to true.
 // errorMsg will be appended to the fullResults, but shortResult will only be updated if it is currently blank
-void updateErrorResults(errorCheckStructure &errorData, bool haltNow, string functionWithIssue, string errorMsg, string missingTab, string configFilename, string configPath);
+void updateErrorResults(errorCheckStructure &errorData, bool haltNow, std::string functionWithIssue, std::string errorMsg, std::string missingTab, std::string configFilename, std::string configPath);
 
 // Error-check helper function which returns a null vector if all values of valuesToFind are in referenceValues, otherwise returns vector of missing values
-vector<string> checkExistanceInList(vector<string> referenceValues, vector<string> valuesToFind);
+std::vector<std::string> checkExistanceInList(std::vector<std::string> referenceValues, std::vector<std::string> valuesToFind);
 
 // Error-check helper function which returns a null vector if all values are >= minima, otherwise returns vector of tags whose values are < minima
-vector<string> checkForFloatErrors(vector<string> tags, vector<double> values, double minima);
+std::vector<std::string> checkForFloatErrors(std::vector<std::string> tags, std::vector<double> values, double minima);
 
 // Error-check helper function which returns a null vector if all values are >= minima, otherwise returns vector of tags whose values are < minima
-vector<string> checkForIntErrors(vector<string> tags, vector<int> values, int minima);
+std::vector<std::string> checkForIntErrors(std::vector<std::string> tags, std::vector<int> values, int minima);

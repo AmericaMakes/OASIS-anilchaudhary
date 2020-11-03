@@ -20,7 +20,6 @@ used by createScanpaths.cpp and/or supportFunctions.cpp
 #include "io_functions.h"
 #include "readExcelConfig.h"
 
-using namespace std;
 namespace fs = std::experimental::filesystem;
 
 
@@ -51,7 +50,7 @@ bool dirExists(const std::string& dirName_in)
 	return false;    // this is not a directory!
 }
 
-double find_max(vector<double>in)
+double find_max(std::vector<double>in)
 {
 	double max = in[0];
 	for (int i = 1; i < in.size(); i++)
@@ -62,7 +61,7 @@ double find_max(vector<double>in)
 	return max;
 }
 
-double find_min(vector<double>in)
+double find_min(std::vector<double>in)
 {
 	double min = in[0];
 	for (int i = 1; i < in.size(); i++)
@@ -74,9 +73,9 @@ double find_min(vector<double>in)
 }
 
 // read status of genLayer or genScan runtime status file
-sts readStatus(string filename)
+sts readStatus(std::string filename)
 {	// filename should be either gl_sts.cfg or gs_sts.cfg for genLayer and genScan, respectively
-	ifstream file(filename);
+	std::ifstream file(filename);
 	sts s;
 	if (!file)
 	{
@@ -87,7 +86,7 @@ sts readStatus(string filename)
 	}
 	else
 	{
-		string line;
+		std::string line;
 		getline(file, line);
 		s.started = atoi(line.c_str());
 		getline(file, line);
@@ -100,12 +99,12 @@ sts readStatus(string filename)
 	return s;
 }
 
-bool has_only_digits(const string s)
+bool has_only_digits(const std::string s)
 {
-	return s.find_first_not_of("0123456789") == string::npos;
+	return s.find_first_not_of("0123456789") == std::string::npos;
 };
 
-fileCount countLayerFiles(string path)
+fileCount countLayerFiles(std::string path)
 // Counts the number of files in a given directory which begin with "layer_" and have a particular extension, such as .xml
 {
 	fileCount output;
@@ -133,7 +132,7 @@ fileCount countLayerFiles(string path)
 	return output;
 };
 
-fileCount countScanFiles(string path)
+fileCount countScanFiles(std::string path)
 // Counts the number of files in a given directory which begin with "scan_" and have a particular extension, such as .xml
 {
 	fileCount output;

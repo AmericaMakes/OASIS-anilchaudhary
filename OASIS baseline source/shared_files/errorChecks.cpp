@@ -29,8 +29,8 @@ It is utilized by all three projects within the ALSAM3024 solution
 void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 {
 	bool haltNow = true;  // assume all errors are fatal unless otherwise noted
-	string errorMsg = "";
-	vector<string> missingItems;
+	std::string errorMsg = "";
+	std::vector<std::string> missingItems;
 
 	//*** 1. Check if any tabs were reported missing by AMconfigRead, other than the single-stripe tab.  If so, call a fatal error and halt here
 	if (errorData.missingConfigTabs.size() > 0) {
@@ -40,7 +40,7 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 
 	// To assist the checks for each tab of the config file, 
 	// set up vectors containing names of all velocity profiles, segment styles and regions
-	vector<string> VPtags, SStags, RegionTags;
+	std::vector<std::string> VPtags, SStags, RegionTags;
 	for (int i = 0; i < configData.VPlist.size(); i++) {
 		VPtags.push_back(configData.VPlist[i].ID);
 	}
@@ -62,14 +62,14 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 	//	stripe heights are >=0
 	if (configData.stripeList.size() > 0) {
 		// check that stripe jump velocity profile exists
-		vector<string> vplist;  // check function requires a vector of strings, not an individual string
+		std::vector<std::string> vplist;  // check function requires a vector of strings, not an individual string
 		vplist.push_back(configData.stripeJumpVPID);
 		missingItems = checkExistanceInList(VPtags, vplist);
 		if (missingItems.size() > 0) {
 			updateErrorResults(errorData, haltNow, "evaluateConfigFile", "The jump profile listed for single-stripes on tab 8 is not listed on tab 3: " + missingItems[0], "", configData.configFilename, configData.configPath);
 		}
 		// check that stripe segment styles exist
-		vector<string> stripeSegStyles;  // Segment styles used by single-stripes
+		std::vector<std::string> stripeSegStyles;  // Segment styles used by single-stripes
 		for (int i = 0; i < configData.stripeList.size(); i++) {
 			stripeSegStyles.push_back(configData.stripeList[i].segmentStyleID);
 		}
@@ -97,7 +97,7 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 	//*** 7. BuildOrder checks:
 	//	(potential warning only) all trajectory numbers are listed on Parts tab
 	//	trajectory processing values are either sequential or concurrent
-	vector<string> trajProcValues;  // list of trajectory processing values
+	std::vector<std::string> trajProcValues;  // list of trajectory processing values
 	for (int i = 0; i < configData.trajProcList.size(); i++) {
 		trajProcValues.push_back(configData.trajProcList[i].trajProcessing);
 	}
@@ -112,7 +112,7 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 	//	part files all end in .stl
 	//	x/y offsets are within reason
 	//	trajectory#'s are >0
-	vector<string> regionsUsedByParts;  // list of regions tags referenced by all parts
+	std::vector<std::string> regionsUsedByParts;  // list of regions tags referenced by all parts
 	for (int i = 0; i < configData.vF.size(); i++) {
 		regionsUsedByParts.push_back(configData.vF[i].Tag);
 	}
@@ -152,13 +152,13 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 	//	warning if region contains neither hatch nor contour ss (or error?)
 	//	if a contour style is listed:  number of contours >0, contour spacing >0; contour offset >=0; skywriting mode >=0
 	//	hatch spacing > 0; hatch offset >=0; skywriting mode >=0
-	vector<string> regionVPid;  // generate a list of velocity profiles referenced by regions for jumps
+	std::vector<std::string> regionVPid;  // generate a list of velocity profiles referenced by regions for jumps
 	for (int i = 0; i < configData.regionProfileList.size(); i++) { regionVPid.push_back(configData.regionProfileList[i].vIDJump); }
 	missingItems = checkExistanceInList(VPtags, regionVPid);
 	if (missingItems.size() > 0) {
 		updateErrorResults(errorData, haltNow, "evaluateConfigFile", "At least one velocity profile referenced on tab 5 (jump style by region) is not listed in the VP list on tab 3, including " + missingItems[0], "", configData.configFilename, configData.configPath);
 	}
-	vector<string> contourSegStyles, hatchSegStyles;  // Segment styles used by hatch and contour styles
+	std::vector<std::string> contourSegStyles, hatchSegStyles;  // Segment styles used by hatch and contour styles
 	for (int i = 0; i < configData.regionProfileList.size(); i++) {
 		if (configData.regionProfileList[i].contourStyleID != "") {
 			contourSegStyles.push_back(configData.regionProfileList[i].contourStyleID);
@@ -214,7 +214,7 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 	if (configData.segmentStyleList.size() == 0) {
 		updateErrorResults(errorData, haltNow, "evaluateConfigFile", "No segment styles are listed on config file tab 4", "", configData.configFilename, configData.configPath);
 	}
-	vector<string> ssVPid;  // generate a list of velocity profiles referenced by segment styles
+	std::vector<std::string> ssVPid;  // generate a list of velocity profiles referenced by segment styles
 	for (int i = 0; i < configData.segmentStyleList.size(); i++) { ssVPid.push_back(configData.segmentStyleList[i].vpID); }
 	missingItems = checkExistanceInList(VPtags, ssVPid);
 	if (missingItems.size() > 0) {
@@ -257,7 +257,7 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 	if (configData.VPlist.size() == 0) {
 		updateErrorResults(errorData, haltNow, "evaluateConfigFile", "No velocity profiles are listed on config file tab 3", "", configData.configFilename, configData.configPath);
 	}
-	vector<double> VPvelocities;
+	std::vector<double> VPvelocities;
 	for (int i = 0; i < configData.VPlist.size(); i++) {
 		VPvelocities.push_back(configData.VPlist[i].velocity);
 	}
@@ -284,7 +284,7 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 // Function to update the error results structure.
 // Calling this function automatically sets errorFound to true.
 // errorMsg will be appended to the fullResults, but shortResult will only be updated if it is currently blank
-void updateErrorResults(errorCheckStructure &errorData, bool haltNow, string functionWithIssue, string errorMsg, string missingTab, string configFilename, string configPath)
+void updateErrorResults(errorCheckStructure &errorData, bool haltNow, std::string functionWithIssue, std::string errorMsg, std::string missingTab, std::string configFilename, std::string configPath)
 {
 	// errorData is a structure containing checks and results
 	// if haltNow is true, this function attempts to write to an output file and quit execution
@@ -299,30 +299,30 @@ void updateErrorResults(errorCheckStructure &errorData, bool haltNow, string fun
 	// Determine whether to write everything to the error filename and halt immediately
 	if (haltNow == true) {
 		// write to console
-		cout << "\n***** FATAL ERROR ENCOUNTERED *****\n" << endl;
-		cout << "  " << errorMsg << endl;
-		cout << "  Function reporting error: " << functionWithIssue << endl << endl;
-		cout << "Execution will be cancelled" << endl;
+		std::cout << "\n***** FATAL ERROR ENCOUNTERED *****\n" << std::endl;
+		std::cout << "  " << errorMsg << std::endl;
+		std::cout << "  Function reporting error: " << functionWithIssue << std::endl << std::endl;
+		std::cout << "Execution will be cancelled" << std::endl;
 
 		// attempt to write findings to error file in the config folder
-		string fullErrFilepath = configPath + "\\" + errorReportFilename;
-		ofstream errFile(fullErrFilepath.c_str());
+		std::string fullErrFilepath = configPath + "\\" + errorReportFilename;
+		std::ofstream errFile(fullErrFilepath.c_str());
 		if (!errFile) {
 			// Could not open the error output file
-			cout << endl << "Could not open the error-report file listed below to write the error; it may be in use\n";
-			cout << fullErrFilepath << endl;
+			std::cout << std::endl << "Could not open the error-report file listed below to write the error; it may be in use\n";
+			std::cout << fullErrFilepath << std::endl;
 		}
 		else {
-			cout << "See " << fullErrFilepath.c_str() << " for more information" << endl;
+			std::cout << "See " << fullErrFilepath.c_str() << " for more information" << std::endl;
 			errFile << "ALSAM scanpath-generation error report\n";
 			// List config filename and current timestamp in the file
 			time_t now = time(0);
 			char str[26];
 			ctime_s(str, sizeof str, &now);   // convert time to string form
-			errFile << str << endl;
+			errFile << str << std::endl;
 			errFile << "Configuration file: " << configFilename << "\n\nError(s) identified:\n";
 			for (int x = 0; x < errorData.fullErrorList.size(); x++) {
-				errFile << errorData.fullErrorList[x].c_str() << endl;
+				errFile << errorData.fullErrorList[x].c_str() << std::endl;
 			}
 			errFile.close();
 		}
@@ -333,10 +333,10 @@ void updateErrorResults(errorCheckStructure &errorData, bool haltNow, string fun
 }
 
 // Error-check helper function which returns a null vector if all values of valuesToFind are in referenceValues, otherwise returns vector of missing values
-vector<string> checkExistanceInList(vector<string> referenceValues, vector<string> valuesToFind)
+std::vector<std::string> checkExistanceInList(std::vector<std::string> referenceValues, std::vector<std::string> valuesToFind)
 {
-	vector<string> valuesNotFound;
-	std::vector<string>::iterator it;
+	std::vector<std::string> valuesNotFound;
+	std::vector<std::string>::iterator it;
 
 	for (int i = 0; i < valuesToFind.size(); i++) {
 		// determine if valuesToFind[i] is contained in referenceValues
@@ -353,9 +353,9 @@ vector<string> checkExistanceInList(vector<string> referenceValues, vector<strin
 }
 
 // Error-check helper function which returns a null vector if all values are >= minima, otherwise returns vector of tags whose values are < minima
-vector<string> checkForFloatErrors(vector<string> tags, vector<double> values, double minima)
+std::vector<std::string> checkForFloatErrors(std::vector<std::string> tags, std::vector<double> values, double minima)
 {
-	vector<string> tagsBelowMinima;
+	std::vector<std::string> tagsBelowMinima;
 	for (int i = 0; i < values.size(); i++) {
 		if (values[i] < minima) {
 			tagsBelowMinima.push_back(tags[i]);
@@ -365,9 +365,9 @@ vector<string> checkForFloatErrors(vector<string> tags, vector<double> values, d
 }
 
 // Error-check helper function which returns a null vector if all values are >= minima, otherwise returns vector of tags whose values are < minima
-vector<string> checkForIntErrors(vector<string> tags, vector<int> values, int minima)
+std::vector<std::string> checkForIntErrors(std::vector<std::string> tags, std::vector<int> values, int minima)
 {
-	vector<string> tagsBelowMinima;
+	std::vector<std::string> tagsBelowMinima;
 	for (int i = 0; i < values.size(); i++) {
 		if (values[i] < minima) {
 			tagsBelowMinima.push_back(tags[i]);

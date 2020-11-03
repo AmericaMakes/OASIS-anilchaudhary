@@ -40,8 +40,6 @@ data structure to an xml file.
 
 extern IXMLDOMDocument *pXMLDomScan;
 
-using namespace std;
-
 // If printTrajectories set to 1, a list of trajectories and regions as they are sent to scan XML will be printed to stdout.
 // This complements printTraj, found in main_genScan, which identfies the trajectories as they are encountered in layer files
 // Normally set printTrajectories to 0
@@ -79,10 +77,10 @@ HRESULT CreateAndAddElementNode(IXMLDOMDocument *pDom, PCWSTR wszName, PCWSTR ws
 
 //**************************
 // Identify the trajectory numbers in a particular layer and the regions within each trajectory
-vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int layerNum);
+std::vector<trajectory> identifyTrajectories(AMconfig &configData, layer &L, int layerNum);
 
 // Manage the creation and writing of an XML SCAN file
-void createSCANxmlFile(string fullXMLpath, int layerNum, AMconfig &configData, vector<trajectory> &trajectoryList);
+void createSCANxmlFile(std::string fullXMLpath, int layerNum, AMconfig &configData, std::vector<trajectory> &trajectoryList);
 
 // Create file header for XML SCAN file.
 // TO DO:  generate min/max values to be included in header comment or other field
@@ -99,7 +97,7 @@ void addXMLtrajectory(IXMLDOMElement *trajList, trajectory &T);
 
 // Write scan output in SVG format.
 // Takes as input the output filename, a trajectory set and the dimensions of the SVG file
-void scan2SVG(string fn, vector<trajectory> &tList, int dim, double mag, double xo, double yo);
+void scan2SVG(std::string fn, std::vector<trajectory> &tList, int dim, double mag, double xo, double yo);
 
 LPCWSTR d2lp(double in);
 
@@ -107,6 +105,6 @@ LPCWSTR i2lp(int in);
 
 //PCWSTR s2lp(string in);
 
-string d2s(double d);
+std::string d2s(double d);
 
 #endif

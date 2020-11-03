@@ -52,7 +52,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 struct fileData
 {
 	bool xlsFileSelected = false;  // false if user cancels or selects non-xls file.  True means user selected the right type of file, but the file may still have errors
-	string filenamePlusPath, filename, path, extension;
+	std::string filenamePlusPath, filename, path, extension;
 };
 
 
@@ -63,16 +63,16 @@ bool cleanupOnStart();
 fileData selectConfigFile();
 
 // assess folder structure at/below the project folder indicated in config file
-string evaluateProjectFolder(AMconfig &configData);
+std::string evaluateProjectFolder(AMconfig &configData);
 
 // provide the user with options based on existing layer and/or scan folders
-string getUserOption(AMconfig &configData, string folderStatus);
+std::string getUserOption(AMconfig &configData, std::string folderStatus);
 
 // set up folder structure for output
-int setupOutputFolders(AMconfig &configData, string userChoice);
+int setupOutputFolders(AMconfig &configData, std::string userChoice);
 
 // run layer or scan generation
-int callGenerationCode(string sysCommand, string statusFilename);
+int callGenerationCode(std::string sysCommand, std::string statusFilename);
 
 // perform final cleanup after layer or scan generation, irrespective of success.  Does not affect error result file, if any
 bool cleanupOnFinish();

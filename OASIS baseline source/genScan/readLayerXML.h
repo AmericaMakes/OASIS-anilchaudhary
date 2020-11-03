@@ -56,7 +56,7 @@ double b2d(BSTR in);
 int b2i(BSTR in);
 
 //helper function for conversion of BSTR to string
-string b2s(BSTR in);
+std::string b2s(BSTR in);
 
 // Load an xml file to a DOM.  Does not parse into structures
 int loadDOM(PCWSTR wszValue);
@@ -65,6 +65,6 @@ int loadDOM(PCWSTR wszValue);
 layer traverseDOM();
 
 // Verify key values in the layer structure parsed from the layer DOM
-int verifyLayerStructure(AMconfig &configData, string layerFilename, layer lyr, vector<string> tagList);
+int verifyLayerStructure(AMconfig &configData, std::string layerFilename, layer lyr, std::vector<std::string> tagList);
 
 #endif

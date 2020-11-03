@@ -34,8 +34,6 @@ layer XML format
 
 #define SHOWVERTEX 1
 
-using namespace std;
-
 // vertex is a single point
 struct vertex
 {	
@@ -53,9 +51,9 @@ struct edge
 // region is an enclosed area, which may be an outer contour or an inner "hole"
 struct region
 {	
-	string type;		// type is either outer (enclosed area is to be hatched) or inner (enclosed area is to be empty)
-	string tag;			// user-defined tag which indicates a regionProfile for scan parameters
-	vector<edge> eList;	// edge list
+	std::string type;		// type is either outer (enclosed area is to be hatched) or inner (enclosed area is to be empty)
+	std::string tag;			// user-defined tag which indicates a regionProfile for scan parameters
+	std::vector<edge> eList;	// edge list
 	int contourTraj;	// Trajectory# for contours, originally based on the part this region came from
 	int hatchTraj;		// Trajectory# for hatches, originally based on the part this region came from
 };
@@ -63,7 +61,7 @@ struct region
 // slice is a collection of regions on the same plane
 struct slice
 {	
-	vector<region> rList;
+	std::vector<region> rList;
 };
 
 // layer is a collection of vertices
@@ -71,19 +69,19 @@ struct layer
 {
 	double thickness;
 	slice s;				// collection of regions on the layer.  Note that there couuld be two slices, upper and lower
-	vector<vertex> vList;	// list of vertices (points) on the layer
+	std::vector<vertex> vList;	// list of vertices (points) on the layer
 };
 
 struct Linfo
 {
 	double z_height;
-	string fn;
+	std::string fn;
 };
 
 struct Hdr
 {
 	int numLayer;
-	vector<Linfo> vLi;
+	std::vector<Linfo> vLi;
 };
 
 void displayLayer(layer L);	//display the contents of the layer L

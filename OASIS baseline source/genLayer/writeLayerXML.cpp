@@ -210,7 +210,7 @@ HRESULT CreateAndInitDOM(IXMLDOMDocument **ppDoc)
 	return hr;
 }
 
-void writeLayer(string fn, layer L)
+void writeLayer(std::string fn, layer L)
 {
 	int p = layerCoordPrecision;
 
@@ -236,11 +236,11 @@ void writeLayer(string fn, layer L)
 	VARIANT varFileName;
 	VariantInit(&varFileName);
 	slice s = L.us;
-	vector<region> rlist = s.rList;
-	wstring wfn(fn.begin(), fn.end());
+	std::vector<region> rlist = s.rList;
+	std::wstring wfn(fn.begin(), fn.end());
 	LPCWSTR  wszValue = wfn.c_str();
-	wstring ws;
-	string st;
+	std::wstring ws;
+	std::string st;
 	IXMLDOMDocument *pXMLDomLayer = NULL;
 	CHK_HR(CreateAndInitDOM(&pXMLDomLayer));
 	
@@ -253,26 +253,26 @@ void writeLayer(string fn, layer L)
 	// Create an attribute for the <root> element, with name "created" and value "using dom".
 	CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Thickness", L"\n\t", pRoot, &tNode));
 		st = d2s(L.thickness);
-		ws = wstring(st.begin(), st.end());
+		ws = std::wstring(st.begin(), st.end());
 		CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), tNode));
 	SAFE_RELEASE(tNode);
 	CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"VertexList", L"\n\t", pRoot, &VlNode));
 	bool firstVertex = true;
-	for (vector<vertex>::iterator it = (L.vList).begin(); it != (L.vList).end(); ++it)
+	for (std::vector<vertex>::iterator it = (L.vList).begin(); it != (L.vList).end(); ++it)
 	{
 		CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Vertex", L"\n\t", VlNode, &VNode));
 		CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"X", L"\n\t", VNode, &XNode));
 		std::stringstream vert_x;	// using stringstream allows us to set precision
 		vert_x << std::fixed << std::setprecision(p) << (*it).x;
 		st = vert_x.str();
-		ws = wstring(st.begin(), st.end());
+		ws = std::wstring(st.begin(), st.end());
 		CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), XNode));
 		SAFE_RELEASE(XNode);
 		CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Y", L"\n\t", VNode, &YNode));
 		std::stringstream vert_y;	// using stringstream allows us to set precision
 		vert_y << std::fixed << std::setprecision(p) << (*it).y;
 		st = vert_y.str();
-		ws = wstring(st.begin(), st.end());
+		ws = std::wstring(st.begin(), st.end());
 		CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), YNode));
 		SAFE_RELEASE(YNode);
 		// Depending on the setting of the constant outputCoordSystem, output coordinate system for every vertex or only the first
@@ -288,51 +288,51 @@ void writeLayer(string fn, layer L)
 	SAFE_RELEASE(VlNode);
 		
 	CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Slice", L"\n\t", pRoot, &SNode));
-	for (vector<region>::iterator it = rlist.begin(); it != rlist.end(); ++it)
+	for (std::vector<region>::iterator it = rlist.begin(); it != rlist.end(); ++it)
 	{
-		string tag = (*it).tag;
-		string type = (*it).type;
+		std::string tag = (*it).tag;
+		std::string type = (*it).type;
 		int contourTraj = (*it).contourTraj;
 		int hatchTraj = (*it).hatchTraj;
 		// Region
 		CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Region", L"\n\t", SNode, &RNode));
 			// Region tag
 			CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Tag", L"\n\t", RNode, &tNode));
-				ws = wstring(tag.begin(), tag.end());
+				ws = std::wstring(tag.begin(), tag.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), tNode));
 			SAFE_RELEASE(tNode);
 			// Contour and hatch trajectory numbers, a proxy for build ordering
 			CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"contourTraj", L"\n\t", RNode, &tNode));
-				st = to_string(contourTraj);
-				ws = wstring(st.begin(), st.end());
+				st = std::to_string(contourTraj);
+				ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), tNode));
 			SAFE_RELEASE(tNode);
 			CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"hatchTraj", L"\n\t", RNode, &tNode));
-				st = to_string(hatchTraj);
-				ws = wstring(st.begin(), st.end());
+				st = std::to_string(hatchTraj);
+				ws = std::wstring(st.begin(), st.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), tNode));
 			SAFE_RELEASE(tNode);
 			// Type of loop (inner or outer)
 			CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Type", L"\n\t", RNode, &tNode));
-				ws = wstring(type.begin(), type.end());
+				ws = std::wstring(type.begin(), type.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomLayer,ws.c_str(), tNode));
 			SAFE_RELEASE(tNode);
-			vector<edge> elist = (*it).eList;
-			for (vector<edge>::iterator et = elist.begin(); et != elist.end(); ++et)
+			std::vector<edge> elist = (*it).eList;
+			for (std::vector<edge>::iterator et = elist.begin(); et != elist.end(); ++et)
 			{
 				CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Edge", L"\n\t", RNode, &ENode));
 					CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Start", L"\n\t", ENode, &IsNode));
 						std::stringstream eStart;	// using stringstream allows us to set precision
 						eStart << std::fixed << std::setprecision(p) << (*et).start_idx;
 						st = eStart.str();
-						ws = wstring(st.begin(), st.end());
+						ws = std::wstring(st.begin(), st.end());
 						CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), IsNode));
 					SAFE_RELEASE(IsNode);
 					CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"End", L"\n\t", ENode, &IfNode));
 						std::stringstream eEnd;	// using stringstream allows us to set precision
 						eEnd << std::fixed << std::setprecision(p) << (*et).end_idx;
 						st = eEnd.str();
-						ws = wstring(st.begin(), st.end());
+						ws = std::wstring(st.begin(), st.end());
 						CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), IfNode));
 					SAFE_RELEASE(IfNode);
 					CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Normal", L"\n\t", ENode, &NNode));
@@ -366,7 +366,7 @@ CleanUp:
 	VariantClear(&varFileName);
 };
 
-void writeHeader(string fn, vector<Linfo> li, int numLayer)
+void writeHeader(std::string fn, std::vector<Linfo> li, int numLayer)
 {
 	HRESULT hr = S_OK;
 	IXMLDOMElement *pRoot = NULL;
@@ -378,10 +378,10 @@ void writeHeader(string fn, vector<Linfo> li, int numLayer)
 	BSTR bstrXML = NULL;
 	VARIANT varFileName;
 	VariantInit(&varFileName);	
-	wstring wfn(fn.begin(), fn.end());
+	std::wstring wfn(fn.begin(), fn.end());
 	LPCWSTR  wszValue = wfn.c_str();
-	wstring ws;
-	string s;
+	std::wstring ws;
+	std::string s;
 	IXMLDOMDocument *pXMLDomLayer = NULL;
 	CHK_HR(CreateAndInitDOM(&pXMLDomLayer));
 	// Create a processing instruction element.
@@ -392,19 +392,19 @@ void writeHeader(string fn, vector<Linfo> li, int numLayer)
 	CHK_HR(CreateElement(pXMLDomLayer, L"Object", &pRoot));
 		CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"No._of_Layers", L"\n\t", pRoot, &nNode));
 			s = d2s((double)numLayer+1);
-			ws = wstring(s.begin(), s.end());
+			ws = std::wstring(s.begin(), s.end());
 			CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), nNode));
 		SAFE_RELEASE(nNode);
-	for (vector<Linfo>::iterator it = li.begin(); it != li.end(); ++it)
+	for (std::vector<Linfo>::iterator it = li.begin(); it != li.end(); ++it)
 	{		
 		CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Layer_info", L"\n\t", pRoot, &lNode));
 			CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"z_Height", L"\n\t", lNode, &lhNode));
 				s = d2s((*it).zHeight);
-				ws = wstring(s.begin(),s.end());
+				ws = std::wstring(s.begin(),s.end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomLayer,ws.c_str(), lhNode));
 			SAFE_RELEASE(lhNode);
 			CHK_HR(CreateAndAddElementNode(pXMLDomLayer, L"Layer_filename", L"\n\t", lNode, &lnNode));
-				ws = wstring(((*it).fn).begin(), ((*it).fn).end());
+				ws = std::wstring(((*it).fn).begin(), ((*it).fn).end());
 				CHK_HR(CreateAndAddTextNode(pXMLDomLayer, ws.c_str(), lnNode));
 			SAFE_RELEASE(lnNode);
 		SAFE_RELEASE(lNode);
@@ -427,20 +427,20 @@ CleanUp:
 
 PCWSTR d2lp(double in)
 {
-	wstringstream wss;
+	std::wstringstream wss;
 	wss << in;
 	return (wss.str()).c_str();
 }
 
-PCWSTR s2lp(string in)
+PCWSTR s2lp(std::string in)
 {
-	wstring win;
-	win = wstring(in.begin(), in.end());	
+	std::wstring win;
+	win = std::wstring(in.begin(), in.end());
 	LPCWSTR out = win.c_str();
 	return out;
 }
 
-string d2s(double d)
+std::string d2s(double d)
 {
 	std::ostringstream oss;
 	oss.precision(std::numeric_limits<double>::digits10);

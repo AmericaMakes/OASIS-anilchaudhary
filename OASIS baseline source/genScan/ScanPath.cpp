@@ -25,7 +25,7 @@ contain multiple Paths
 #include "ScanPath.h"
 #include "constants.h"
 
-void findHatchBoundary(vector<vertex> &in, double hatchAngle, double *a_min, double *a_max)
+void findHatchBoundary(std::vector<vertex> &in, double hatchAngle, double *a_min, double *a_max)
 {
 	// Computes min/max x or y intersection of hatch lines drawn through all vertices
 	// This identifies the number of hatch lines we need to create
@@ -35,7 +35,7 @@ void findHatchBoundary(vector<vertex> &in, double hatchAngle, double *a_min, dou
 	// If hatchAngle is 45 to 135 or 225 to 315 degrees we evaluate along the x axis
 	double hatchAngle_rads = hatchAngle * 3.14159265358979323846 / 180;  // hatch angle in radians
 	int vLen = in.size();
-	vector<double> a;
+	std::vector<double> a;
 	a.reserve(vLen);  // pre-size the vector
 	vertex v;
 
@@ -82,7 +82,7 @@ double dist(vertex &v1, vertex &v2)
 	return r;
 }
 
-int findIntersection(vertex *out, double hatchAngle, double hatchAngle_rads, vector<vertex> BB, double intercept, edge e, double hatchFunctionValue)
+int findIntersection(vertex *out, double hatchAngle, double hatchAngle_rads, std::vector<vertex> BB, double intercept, edge e, double hatchFunctionValue)
 {
 	// e is the edge (2-point line segment) to be evaluated for intersection with a particular hatch line
 	// the hatch line is defined via hatchAngle and intercept, which may be either x or y intercept based on hatchAngle
@@ -205,7 +205,7 @@ int findIntersection(vertex *out, double hatchAngle, double hatchAngle_rads, vec
 }
 
 // sort vertexList in order of ascending y coordinate, and ascending x-coordinate if y's are equal
-void yAsc(vector<vertex> &vertexList)
+void yAsc(std::vector<vertex> &vertexList)
 {
 	int vLen = vertexList.size();
 	for (int i = 0; i < vLen; i++)
@@ -234,7 +234,7 @@ void yAsc(vector<vertex> &vertexList)
 	return;
 }
 
-void yDsc(vector<vertex> &vertexList)
+void yDsc(std::vector<vertex> &vertexList)
 {
 	int vLen = (int)vertexList.size();
 	for (int i = 0; i < vLen; i++)
@@ -263,7 +263,7 @@ void yDsc(vector<vertex> &vertexList)
 	return;
 }
 
-void xAsc(vector<vertex> &vertexList)
+void xAsc(std::vector<vertex> &vertexList)
 {
 	int vLen = vertexList.size();
 	for (int i = 0; i < vLen; i++)
@@ -292,7 +292,7 @@ void xAsc(vector<vertex> &vertexList)
 	return;
 }
 
-void xDsc(vector<vertex> &vertexList)
+void xDsc(std::vector<vertex> &vertexList)
 {
 	int vLen = (int)vertexList.size();
 	for (int i = 0; i < vLen; i++)
@@ -321,10 +321,10 @@ void xDsc(vector<vertex> &vertexList)
 	return;
 }
 
-vector<vertex> eliminateDuplicateVertices(vector<vertex> &vertexList)
+std::vector<vertex> eliminateDuplicateVertices(std::vector<vertex> &vertexList)
 {	// assumes vertexList has been sorted in x and y.  doesn't matter which is the primary axis
 	int vLen = (int)vertexList.size();
-	vector<int> duplicateList;
+	std::vector<int> duplicateList;
 	bool bContinue = true;
 	int i = 0;
 
@@ -343,7 +343,7 @@ vector<vertex> eliminateDuplicateVertices(vector<vertex> &vertexList)
 	}
 
 	// eliminate any duplicates and return as a new vector
-	vector<vertex> vListOut = vertexList;
+	std::vector<vertex> vListOut = vertexList;
 	for (int it = duplicateList.size() - 1; it >= 0; it--)
 	{	// erase the duplicate vertex
 		vListOut.erase(vListOut.begin() + duplicateList[it]);
@@ -397,7 +397,7 @@ int getTurnDir(edge ev1, edge ev2)
 		return -1;
 }
 
-void edgeOffset(layer &L, vector<int> regionIndex, vector<edge> &edgeListOut, vector<vector<edge>> &polyVectorsOut, double offset, bool returnPolyVectors)
+void edgeOffset(layer &L, std::vector<int> regionIndex, std::vector<edge> &edgeListOut, std::vector<std::vector<edge>> &polyVectorsOut, double offset, bool returnPolyVectors)
 {
 	// this function offsets a set of edges "inward" for positive offset values
 	// therefore outer contours will be indended toward center of part (making the outer contour smaller),
@@ -427,7 +427,7 @@ void edgeOffset(layer &L, vector<int> regionIndex, vector<edge> &edgeListOut, ve
 	edgeListOut.shrink_to_fit();
 
 	// 1. Iterate over regions and convert the edges into a Clipper Path (vector of endpoints).  Then add them to allContoursIn
-	for (vector<int>::iterator it = regionIndex.begin(); it != regionIndex.end(); ++it) {
+	for (std::vector<int>::iterator it = regionIndex.begin(); it != regionIndex.end(); ++it) {
 		// pre-size contourIn to hold the number of endpoints expected
 		contourIn.clear();
 		contourIn.shrink_to_fit();
@@ -465,7 +465,7 @@ void edgeOffset(layer &L, vector<int> regionIndex, vector<edge> &edgeListOut, ve
 	polyVectorsOut.reserve(allContoursOut.size());  // assume all output polygons are valid (non-zero size)
 
 	// 4b. iterate through allContoursOut. create a set of edges for each polygon and append it to polyVectorsOut
-	vector<edge> tmpEdgeList;
+	std::vector<edge> tmpEdgeList;
 	edge e;
 	for (j=0; j < allContoursOut.size(); j++) {
 		int polySize = allContoursOut[j].size();  // used multiple times
@@ -526,8 +526,8 @@ void displayPath(path P)
 	or has a traveler with power=0
 	*/
 	vertex s, f;
-	vector<segment> SP = P.vecSg;
-	for (vector<segment>::iterator it = SP.begin(); it != SP.end(); ++it)
+	std::vector<segment> SP = P.vecSg;
+	for (std::vector<segment>::iterator it = SP.begin(); it != SP.end(); ++it)
 	{
 		s = (*it).start;
 		f = (*it).end;
@@ -535,24 +535,24 @@ void displayPath(path P)
 			cout << "Jump: ";
 		else
 			cout << "Mark: ";  */
-		cout << "Need to differentiate Jump and Mark: ";
-		cout << s.x << " " << s.y << " ---> " << f.x << " " << f.y << endl;
+		std::cout << "Need to differentiate Jump and Mark: ";
+		std::cout << s.x << " " << s.y << " ---> " << f.x << " " << f.y << std::endl;
 	}
-	cout << "Scan Files saved. " << endl;
+	std::cout << "Scan Files saved. " << std::endl;
 	printf("====================================================================\n");
 	return;
 }
 
-vector<vertex> getBB(layer &L)
+std::vector<vertex> getBB(layer &L)
 {
 	// If the layer is blank (contains no vertices), we return a default bounding box.
 	// This might be the case when the layer consists only of single stripes and no STL parts
 	//
-	vector<vertex> BB;  // bounding box output; coordinates which define the four outermost x/y coordinates of the layer
+	std::vector<vertex> BB;  // bounding box output; coordinates which define the four outermost x/y coordinates of the layer
 	BB.reserve(4);
 	vertex vTmp, vL, vR, vT, vB;
 	vertex va, vb, vc, vd;
-	vector<vertex>* vList = &(L.vList);
+	std::vector<vertex>* vList = &(L.vList);
 
 	if ((*vList).size() > 0) {
 		
@@ -599,7 +599,7 @@ vector<vertex> getBB(layer &L)
 	return BB;
 }
 
-int findInt(vector<vertex> &BB, vertex v1, vertex v2)
+int findInt(std::vector<vertex> &BB, vertex v1, vertex v2)
 {
 	int bInt = 0;
 
@@ -614,13 +614,13 @@ int findInt(vector<vertex> &BB, vertex v1, vertex v2)
 	return bInt;
 }
 
-vector<int> singleStripeCount(int layerNum, AMconfig &configData)
+std::vector<int> singleStripeCount(int layerNum, AMconfig &configData)
 {
 	// Evaluate the list of stripes to see if any are to be written on this layer and/or higher layers.
 	// Return value is a vector of the trajectories of single stripes on this layer.
 	// Knowing whether stripes exist on this layer allows us to predefine one or more stripe trajectories
 
-	vector<int> stripeTrajThisLayer;
+	std::vector<int> stripeTrajThisLayer;
 	int remainingStripeCount = 0;  // stripes remaining across this layer or higher
 	int stripeCountThisLayer = 0;  // stripes on this layer only
 	for (int stp = 0; stp < configData.stripeList.size(); stp++)
@@ -669,12 +669,12 @@ path singleStripes(int layerNum, int trajectoryNum, AMconfig &configData)
 				increment stripesMarked
 	*/
 	segment sg;				// holds a single segment for processing
-	vector<segment> vSg;    // holds the output stripe & jump segments
+	std::vector<segment> vSg;    // holds the output stripe & jump segments
 	int stripesMarked = 0;  // running count of stripes marked on this layer
 	vertex priorEndpoint;   // permits a jump from previous stripe, if any
-	string jumpStyle;		// segment styles for all jumps between single stripes
+	std::string jumpStyle;		// segment styles for all jumps between single stripes
 	if (configData.outputIntegerIDs == true) {
-		jumpStyle = to_string(configData.stripeJumpSegStyleIntID);
+		jumpStyle = std::to_string(configData.stripeJumpSegStyleIntID);
 	}
 	else {
 		jumpStyle = configData.stripeJumpSegStyleID;
@@ -703,7 +703,7 @@ path singleStripes(int layerNum, int trajectoryNum, AMconfig &configData)
 			sg.end.x = configData.stripeList[stp].endX;
 			sg.end.y = configData.stripeList[stp].endY;
 			if (configData.outputIntegerIDs == true) {
-				sg.idSegStyl = to_string(configData.stripeList[stp].segmentStyleIntID);
+				sg.idSegStyl = std::to_string(configData.stripeList[stp].segmentStyleIntID);
 			}
 			else {
 				sg.idSegStyl = configData.stripeList[stp].segmentStyleID;
@@ -722,7 +722,7 @@ path singleStripes(int layerNum, int trajectoryNum, AMconfig &configData)
 	return P;
 }
 
-path hatch(layer &L, vector<int> regionIndex, regionProfile &rProfile, double offset, double hatchAngle, double a_min, double a_max, bool outputIntegerIDs, vector<vertex> boundingBox)
+path hatch(layer &L, std::vector<int> regionIndex, regionProfile &rProfile, double offset, double hatchAngle, double a_min, double a_max, bool outputIntegerIDs, std::vector<vertex> boundingBox)
 {
 	/*	L: pointer to the layer structure
 	regionIndex: list of regions to be hatched.  Must all have the same tag identified in rProfile
@@ -738,8 +738,8 @@ path hatch(layer &L, vector<int> regionIndex, regionProfile &rProfile, double of
 	*/
 
 	path P;  // path of hatch segments to be created
-	vector<edge> edgeList;
-	vector<segment> vSg;
+	std::vector<edge> edgeList;
+	std::vector<segment> vSg;
 
 	double hSpace = rProfile.resHatch;  // hSpace is the spacing between hatches, which will be modified by hatchAngle
 	double a_curr;  // starting intercept coordinate of the current hatch line
@@ -752,7 +752,7 @@ path hatch(layer &L, vector<int> regionIndex, regionProfile &rProfile, double of
 	// Determine primary hatching orientation (toward x or y axis), and adjust hSpace to account for hatchAngle
 	double hatchAngle_rads = hatchAngle * 3.14159265358979323846 / 180;  // hatch angle in radians
 	double hatchFunctionValue;  // sine or tangent value of hatchAngle_rads to be computed once and passed to findIntersection
-	string primaryHatchDir;     // either y (progress along y axis) or x (progress along x axis), depending on hatchAngle
+	std::string primaryHatchDir;     // either y (progress along y axis) or x (progress along x axis), depending on hatchAngle
 	// Determine whether to generate hatches progressing along the vertical or horizontal axis based on hatch angle
 	if ((((int)hatchAngle + 315) % 180) > 90) {
 		// hatchAngle is [315 to 45] or [135 to 225] degrees, i.e. closer to the x than y axis (and potentially parallel to the x axis)
@@ -773,10 +773,10 @@ path hatch(layer &L, vector<int> regionIndex, regionProfile &rProfile, double of
 	int naiveTmpSize = numRegions * 3;  // estimated number of intersections per hatch line, for sizing temporary vectors
 
 	// Identify the segment styles, in terms of either their string or auto-generated integer ID's
-	string hatchSegStyle, jumpSegStyle;
+	std::string hatchSegStyle, jumpSegStyle;
 	if (outputIntegerIDs == true) {
-		hatchSegStyle = to_string(rProfile.hatchStyleIntID);
-		jumpSegStyle  = to_string(rProfile.jumpStyleIntID);
+		hatchSegStyle = std::to_string(rProfile.hatchStyleIntID);
+		jumpSegStyle  = std::to_string(rProfile.jumpStyleIntID);
 	}
 	else {
 		hatchSegStyle = rProfile.hatchStyleID;
@@ -784,7 +784,7 @@ path hatch(layer &L, vector<int> regionIndex, regionProfile &rProfile, double of
 	}
 
 	//*** Offset the edges across all regions under this tag (per hatch offset) and combine into a list of offsetted edges across all regions using this tag
-	vector<vector<edge>> unusedVar;  // alternate output for edgeOffset, which must exist even if it won't be populated
+	std::vector<std::vector<edge>> unusedVar;  // alternate output for edgeOffset, which must exist even if it won't be populated
 	edgeOffset(L, regionIndex, edgeList, unusedVar, offset, false);  // false=return all offset edges in one (jumbled) vector
 
 	// determine whether we have anything to output (any polygons which survived offsetting)
@@ -808,13 +808,13 @@ path hatch(layer &L, vector<int> regionIndex, regionProfile &rProfile, double of
 
 	bool finished = false;  // use this to determine when we've reached a_end, since we could be incrementing or decrementing via hSpace
 	// We start at a_start + hSpace because a hatch exactly at a_start would have no length (it would be a one-point hatch)
-	vector<vertex> isList;  // list of intersections between edges and hatch lines
+	std::vector<vertex> isList;  // list of intersections between edges and hatch lines
 	a_curr = a_start + hSpace;  // a_curr is the x or y intersection of the current hatch line
 	while (!finished)
 	{
-		vector<vertex> tmp_isList, tmp_isListNoDuplicates;  // temporary list of intersections between one hatch line and all edges for this region tag
+		std::vector<vertex> tmp_isList, tmp_isListNoDuplicates;  // temporary list of intersections between one hatch line and all edges for this region tag
 		tmp_isList.reserve(naiveTmpSize);  // number of intersections is not yet known; may be 0 or very large depending on geometry
-		for (vector<edge>::iterator it = edgeList.begin(); it != edgeList.end(); ++it)
+		for (std::vector<edge>::iterator it = edgeList.begin(); it != edgeList.end(); ++it)
 		{
 			//get intersection with edge
 			vertex is;
@@ -911,7 +911,7 @@ path hatch(layer &L, vector<int> regionIndex, regionProfile &rProfile, double of
 	segment sg;
 	int jump = 0;
 	vSg.reserve((int)isList.size());  // pre-size the output.  We know exactly how many segments we need, at this point
-	for (vector<vertex>::iterator it = isList.begin(); it != isList.end() - 1; ++it)
+	for (std::vector<vertex>::iterator it = isList.begin(); it != isList.end() - 1; ++it)
 	{
 		sg.start = *it;
 		sg.end = *(it + 1);
@@ -940,7 +940,7 @@ path hatch(layer &L, vector<int> regionIndex, regionProfile &rProfile, double of
 	return P;
 }
 
-path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double offset, double hatchAngle, double a_min, double a_max, bool outputIntegerIDs, vector<vertex> boundingBox)
+path hatchOPT(layer &L, std::vector<int> regionIndex, regionProfile &rProfile, double offset, double hatchAngle, double a_min, double a_max, bool outputIntegerIDs, std::vector<vertex> boundingBox)
 {
 	/*	L: pointer to the layer structure
 	regionIndex: list of regions to be hatched.  Must all have the same tag identified in rProfile
@@ -956,7 +956,7 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 	*/
 
 	path P;  // path of hatch segments to be created
-	vector<edge> edgeList;
+	std::vector<edge> edgeList;
 
 	double hSpace = rProfile.resHatch;  // hSpace is the spacing between hatches, which will be modified by hatchAngle
 	double a_curr;  // starting intercept coordinate of the current hatch line
@@ -969,7 +969,7 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 	// Determine primary hatching orientation (toward x or y axis), and adjust hSpace to account for hatchAngle
 	double hatchAngle_rads = hatchAngle * 3.14159265358979323846 / 180;  // hatch angle in radians
 	double hatchFunctionValue;  // sine or tangent value of hatchAngle_rads to be computed once and passed to findIntersection
-	string primaryHatchDir;     // either y (progress along y axis) or x (progress along x axis), depending on hatchAngle
+	std::string primaryHatchDir;     // either y (progress along y axis) or x (progress along x axis), depending on hatchAngle
 	// Determine whether to generate hatches progressing along the vertical or horizontal axis based on hatch angle
 	if ((((int)hatchAngle + 315) % 180) > 90) {
 		// hatchAngle is [315 to 45] or [135 to 225] degrees, i.e. closer to the x than y axis (and potentially parallel to the x axis)
@@ -990,10 +990,10 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 	int naiveTmpSize = numRegions * 3;  // estimated number of intersections per hatch line, for sizing temporary vectors
 
 	// Identify the segment styles, in terms of either their string or auto-generated integer ID's
-	string hatchSegStyle, jumpSegStyle;
+	std::string hatchSegStyle, jumpSegStyle;
 	if (outputIntegerIDs == true) {
-		hatchSegStyle = to_string(rProfile.hatchStyleIntID);
-		jumpSegStyle = to_string(rProfile.jumpStyleIntID);
+		hatchSegStyle = std::to_string(rProfile.hatchStyleIntID);
+		jumpSegStyle = std::to_string(rProfile.jumpStyleIntID);
 	}
 	else {
 		hatchSegStyle = rProfile.hatchStyleID;
@@ -1001,7 +1001,7 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 	}
 
 	//*** Offset the edges in each region (per hatch offset) and combine into a list of offsetted edges across all regions using this tag
-	vector<vector<edge>> unusedVar;  // alternate output for edgeOffset, which must exist even if it won't be populated
+	std::vector<std::vector<edge>> unusedVar;  // alternate output for edgeOffset, which must exist even if it won't be populated
 	edgeOffset(L, regionIndex, edgeList, unusedVar, offset, false);  // false=return all offset edges in one (jumbled) vector
 	
 	// determine whether we have anything to output (any polygons which survived offsetting)
@@ -1026,16 +1026,16 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 	// We start at a_start + hSpace because a hatch exactly at a_start would have no length (it would be a one-point hatch)
 	a_curr = a_start + hSpace;  // a_curr is the x or y intersection of the current hatch line
 
-	vector<hRegion> hRegionList;
-	vector<hRegion> tmp_hRegionList;
+	std::vector<hRegion> hRegionList;
+	std::vector<hRegion> tmp_hRegionList;
 	int isNum_curr, isNum_prev;
 	int hStart = 0;
 
 	//get intersection points between edges and hatch lines
 	while (!finished)
 	{
-		vector<vertex> tmp_isList, tmp_isListNoDuplicates;  // temporary list of intersections between one hatch line and all edges for this region tag
-		for (vector<edge>::iterator it = edgeList.begin(); it != edgeList.end(); ++it)
+		std::vector<vertex> tmp_isList, tmp_isListNoDuplicates;  // temporary list of intersections between one hatch line and all edges for this region tag
+		for (std::vector<edge>::iterator it = edgeList.begin(); it != edgeList.end(); ++it)
 		{
 			//get intersection with edge
 			vertex is;
@@ -1134,7 +1134,7 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 			if (isNum_curr == isNum_prev)
 			{
 				int i = 0;
-				for (vector<hRegion>::iterator it = tmp_hRegionList.begin(); it != tmp_hRegionList.end(); ++it)
+				for (std::vector<hRegion>::iterator it = tmp_hRegionList.begin(); it != tmp_hRegionList.end(); ++it)
 				{
 					vertex tmp_v;
 					tmp_v = (*it).end;
@@ -1169,7 +1169,7 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 			else
 			{	
 				hRegionList.insert(hRegionList.end(), tmp_hRegionList.begin(), tmp_hRegionList.end());
-				vector<hRegion> tmp_hRegionList_old;
+				std::vector<hRegion> tmp_hRegionList_old;
 				tmp_hRegionList_old = tmp_hRegionList;
 				tmp_hRegionList.clear();
 				tmp_hRegionList.shrink_to_fit();
@@ -1216,10 +1216,10 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 
 	//all hatches have now been generated.  put all disjoints regions in one vector
 	hRegionList.insert(hRegionList.end(), tmp_hRegionList.begin(), tmp_hRegionList.end());
-	vector<segment> vsg;
-	vector<int> mapHrg(hRegionList.size(), 0);
+	std::vector<segment> vsg;
+	std::vector<int> mapHrg(hRegionList.size(), 0);
 	int cnt = hRegionList.size();
-	vector<int> optHrg;
+	std::vector<int> optHrg;
 	int curr = 0;
 
 	//nearest neighbor algorithm for connecting the regions
@@ -1249,7 +1249,7 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 	hRegion hrg_s, hrg_f;
 	if (optHrg.size()>1)
 	{
-		for (vector<int>::iterator it = optHrg.begin(); it != optHrg.end() - 1; ++it)
+		for (std::vector<int>::iterator it = optHrg.begin(); it != optHrg.end() - 1; ++it)
 		{
 			segment sg;
 			hrg_s = hRegionList[*it];
@@ -1272,9 +1272,9 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 	//Patch to make sure there are no gaps in the laser path; should not be required if the algorithm works correctly
 	vsg.insert(vsg.end(), (hrg_f.vecSg).begin(), (hrg_f.vecSg).end());
 	vertex vEnd, vStart, vn, tmpv;
-	vector<segment> segVecNoHoles;
+	std::vector<segment> segVecNoHoles;
 	segment sg;
-	for (vector<segment>::iterator iSeg = vsg.begin(); iSeg != vsg.end() - 1; ++iSeg)
+	for (std::vector<segment>::iterator iSeg = vsg.begin(); iSeg != vsg.end() - 1; ++iSeg)
 	{
 		segVecNoHoles.push_back(*iSeg);
 		vEnd = (*iSeg).end;
@@ -1308,7 +1308,7 @@ path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double
 	return P;
 }
 
-path contour(layer &L, vector<int> regionIndex, regionProfile &rProfile, double offset, vector<vertex> BB, bool outputIntegerIDs)
+path contour(layer &L, std::vector<int> regionIndex, regionProfile &rProfile, double offset, std::vector<vertex> BB, bool outputIntegerIDs)
 {
 	/*	L is a pointer to the layer, which contains regions, edges and vertices.
 		regionIndex is a vector of region numbers (as measured from the start of (*L).s.rList) to be contoured together
@@ -1327,19 +1327,19 @@ path contour(layer &L, vector<int> regionIndex, regionProfile &rProfile, double 
 
 	// Identify the values we'll need
 	path P;
-	string tag = rProfile.Tag;
-	string markSegStyle, jumpSegStyle;
+	std::string tag = rProfile.Tag;
+	std::string markSegStyle, jumpSegStyle;
 	if (outputIntegerIDs == true) {
-		markSegStyle = to_string(rProfile.contourStyleIntID);
-		jumpSegStyle = to_string(rProfile.jumpStyleIntID);
+		markSegStyle = std::to_string(rProfile.contourStyleIntID);
+		jumpSegStyle = std::to_string(rProfile.jumpStyleIntID);
 	}
 	else {
 		markSegStyle = rProfile.contourStyleID;
 		jumpSegStyle = rProfile.jumpStyleID;
 	}
 
-	vector<segment> vSg;  // holds the output contour segments
-	vector<vector<edge>> allOffsetEdges;  // holds return from edgeOffset containing individual vectors for each offsetted region
+	std::vector<segment> vSg;  // holds the output contour segments
+	std::vector<std::vector<edge>> allOffsetEdges;  // holds return from edgeOffset containing individual vectors for each offsetted region
 	segment sg;
 	segment jumpConnector;  // holds endpoint of prior region so that a jump can be added between regions
 	jumpConnector.start.x = 0.0;  // initialize jumpConnector
@@ -1357,7 +1357,7 @@ path contour(layer &L, vector<int> regionIndex, regionProfile &rProfile, double 
 	vSg.reserve(numSegments);
 
 	//*** Offset all regions (under this tag) at once, and get a vector of individual region vectors
-	vector<edge> tmpEdgeList;  // will not be used, but need to define such a variable for edgeOffset
+	std::vector<edge> tmpEdgeList;  // will not be used, but need to define such a variable for edgeOffset
 	edgeOffset(L, regionIndex, tmpEdgeList, allOffsetEdges, offset, true);  // true=return output in allOffsetEdges, containing a vector for each region
 
 	// determine whether we have anything to output (any polygons which survived offsetting)
@@ -1384,7 +1384,7 @@ path contour(layer &L, vector<int> regionIndex, regionProfile &rProfile, double 
 			}
 
 			// iterate over offsetEdgeList and create contour segments
-			for (vector<edge>::iterator e = (allOffsetEdges[r]).begin(); e != (allOffsetEdges[r]).end(); ++e)
+			for (std::vector<edge>::iterator e = (allOffsetEdges[r]).begin(); e != (allOffsetEdges[r]).end(); ++e)
 			{
 				sg.start = (*e).s;
 				sg.end = (*e).f;

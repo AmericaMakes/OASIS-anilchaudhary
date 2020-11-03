@@ -32,7 +32,7 @@ ALSAM3024 projects.
 using namespace YExcel;
 
 
-string as_lower(string input)
+std::string as_lower(std::string input)
 {
 	// Reads a string input and returns in all lower case
 	std::transform(input.begin(), input.end(), input.begin(),
@@ -40,13 +40,13 @@ string as_lower(string input)
 	return input;
 }
 
-string parseToString(BasicExcelCell* unknownInput)
+std::string parseToString(BasicExcelCell* unknownInput)
 {
 	// Parses a cell value returned from BasicExcel into a string.
 	// If unknownInput is a string, no further processing is needed.
 	// If it is an integer, we need to truncate it to avoid storing "3" as "3.000000".
 	// Similarly, for double values we want to avoid excess truncation.
-	string output;
+	std::string output;
 	double d1, d2;
 	int tempInt;
 	switch (unknownInput->Type())
@@ -60,7 +60,7 @@ string parseToString(BasicExcelCell* unknownInput)
 		break;
 	case BasicExcelCell::INT:
 		// IN PRACTICE, BASICEXCEL NEVER USES THIS CASE. INT IS ALWAYS CLASSIFIED AS DOUBLE
-		output = as_lower(to_string(unknownInput->GetInteger()));
+		output = as_lower(std::to_string(unknownInput->GetInteger()));
 		break;
 	case BasicExcelCell::DOUBLE:
 		// This case captures both int and double.  Differentiate them to avoid int-->double, e.g. 15.000000
@@ -105,13 +105,13 @@ bool parseToBool(BasicExcelCell* unknownInput)
 	return result;
 }
 
-void readGeneralParameters(BasicExcelWorksheet* sheet2, AMconfig* configData, string tabName)
+void readGeneralParameters(BasicExcelWorksheet* sheet2, AMconfig* configData, std::string tabName)
 {	// Read the general parameters tab of an America Makes Excel configuration file.
 	// This is called by AMconfigRead
 
 	// First determine the path of the configuration file
 	size_t slashPos = (*configData).configFilename.find_last_of("\\");
-	string path = (*configData).configFilename.substr(0, slashPos);
+	std::string path = (*configData).configFilename.substr(0, slashPos);
 	//
 	// Read folder name and layer thickness
 	std::string folderName = sheet2->Cell(3, 2)->GetString();	// Name of the desired folder to contain both layer and scan outputs
@@ -148,14 +148,14 @@ void readGeneralParameters(BasicExcelWorksheet* sheet2, AMconfig* configData, st
 	return;
 }
 
-void readVelocityProfiles(BasicExcelWorksheet* sheet3, AMconfig* configData, string tabName)
+void readVelocityProfiles(BasicExcelWorksheet* sheet3, AMconfig* configData, std::string tabName)
 {	// Read the velocity profiles tab of an America Makes Excel configuration file.
 	// This is called by AMconfigRead
 
 	// Loop until we run into a blank profile ID
 	velocityProfile vpRow;
 	int rowNum = 6;	// First row of data.  Note that C++ counts from 0 rather than 1
-	string temp = parseToString(sheet3->Cell(rowNum, 0));
+	std::string temp = parseToString(sheet3->Cell(rowNum, 0));
 	while (temp != "")
 	{
 		vpRow.ID = temp;
@@ -175,12 +175,12 @@ void readVelocityProfiles(BasicExcelWorksheet* sheet3, AMconfig* configData, str
 	}
 }
 
-void readSegmentStyles(BasicExcelWorksheet* sheet4, AMconfig* configData, string tabName)
+void readSegmentStyles(BasicExcelWorksheet* sheet4, AMconfig* configData, std::string tabName)
 {	// Read the segment-styles tab of an America Makes Excel configuration file.
 	// This is called by AMconfigRead
 
 	// Generate a list of velocity profile ID strings, to enable indexing to a specific profile
-	vector<string> vpList;
+	std::vector<std::string> vpList;
 	for (int r = 0; r < (*configData).VPlist.size(); r++)
 	{	vpList.push_back((*configData).VPlist[r].ID);	}
 
@@ -188,7 +188,7 @@ void readSegmentStyles(BasicExcelWorksheet* sheet4, AMconfig* configData, string
 	// Loop until we run into a blank tag
 	segmentStyle scanRow;	// a single scan strategy
 	int rowNum = 8;	// starting row of data; hard-coded expectation
-	string temp = parseToString(sheet4->Cell(rowNum, 0));
+	std::string temp = parseToString(sheet4->Cell(rowNum, 0));
 	while (temp != "")
 	{
 		// This row contains actual data and will be read in as a scan strategy
@@ -196,11 +196,11 @@ void readSegmentStyles(BasicExcelWorksheet* sheet4, AMconfig* configData, string
 		scanRow.integerID = (*configData).segmentStyleList.size() + 1;  // auto-populate a unique integerID for LabView
 		scanRow.vpID = parseToString(sheet4->Cell(rowNum, 1));
 		// Identify the vpIntID which corresponds to vpID
-		std::vector<string>::iterator it = find(vpList.begin(), vpList.end(), scanRow.vpID);
+		std::vector<std::string>::iterator it = find(vpList.begin(), vpList.end(), scanRow.vpID);
 		scanRow.vpIntID = std::distance(vpList.begin(), it) + 1;
 
 		// Determine if the lead-laser section is populated
-		string temp2 = parseToString(sheet4->Cell(rowNum, 2));
+		std::string temp2 = parseToString(sheet4->Cell(rowNum, 2));
 		if (temp2 == "")
 		{
 			scanRow.laserMode = ""; // This is a Jump-only strategy without a specific laser indicated
@@ -223,7 +223,7 @@ void readSegmentStyles(BasicExcelWorksheet* sheet4, AMconfig* configData, string
 			scanRow.leadLaser.power = sheet4->Cell(rowNum, 3)->GetDouble();
 			scanRow.leadLaser.spotSize = sheet4->Cell(rowNum, 4)->GetDouble();
 			// Determine whether wobble is enabled for the lead laser
-			string tempBool = parseToString(sheet4->Cell(rowNum, 5));
+			std::string tempBool = parseToString(sheet4->Cell(rowNum, 5));
 			if (as_lower(tempBool) == "on")
 			{
 				scanRow.leadLaser.wobble = true;	// also read the remaining wobble parameters
@@ -276,12 +276,12 @@ void readSegmentStyles(BasicExcelWorksheet* sheet4, AMconfig* configData, string
 	return;  // currently no return value, but could indicate error code or row# with data problems
 }
 
-void readRegionProfiles(BasicExcelWorksheet* sheet5, AMconfig* configData, string tabName)
+void readRegionProfiles(BasicExcelWorksheet* sheet5, AMconfig* configData, std::string tabName)
 {	// Read the region profile tab of an America Makes Excel configuration file.
 	// This is called by AMconfigRead
 
 	// First create a list of segment styles so that we can index from string-input ID to auto-generated integer ID's
-	vector<string> segStyleList;
+	std::vector<std::string> segStyleList;
 	for (int r = 0; r < (*configData).segmentStyleList.size(); r++)
 	{	segStyleList.push_back((*configData).segmentStyleList[r].ID);	}
 
@@ -289,7 +289,7 @@ void readRegionProfiles(BasicExcelWorksheet* sheet5, AMconfig* configData, strin
 	// Loop until we run into a blank tag
 	regionProfile regionRow;
 	int rowNum = 6;	// first row of data - hard coded expectation
-	string temp = parseToString(sheet5->Cell(rowNum, 0));
+	std::string temp = parseToString(sheet5->Cell(rowNum, 0));
 	while (temp != "")	// iterate until a blank row is reached
 	{
 		regionRow.Tag = temp;
@@ -303,7 +303,7 @@ void readRegionProfiles(BasicExcelWorksheet* sheet5, AMconfig* configData, strin
 		}
 		else {
 			// Identify the integerID which corresponds to contourStyleIntID
-			std::vector<string>::iterator it = find(segStyleList.begin(), segStyleList.end(), regionRow.contourStyleID);
+			std::vector<std::string>::iterator it = find(segStyleList.begin(), segStyleList.end(), regionRow.contourStyleID);
 			regionRow.contourStyleIntID = std::distance(segStyleList.begin(), it) + 1;
 		}
 		regionRow.numCntr = sheet5->Cell(rowNum, 3)->GetInteger();
@@ -319,7 +319,7 @@ void readRegionProfiles(BasicExcelWorksheet* sheet5, AMconfig* configData, strin
 		}
 		else {
 			// Identify the integerID which corresponds to hatchStyleID
-			std::vector<string>::iterator it = find(segStyleList.begin(), segStyleList.end(), regionRow.hatchStyleID);
+			std::vector<std::string>::iterator it = find(segStyleList.begin(), segStyleList.end(), regionRow.hatchStyleID);
 			regionRow.hatchStyleIntID = std::distance(segStyleList.begin(), it) + 1;
 		}
 
@@ -339,25 +339,25 @@ void readRegionProfiles(BasicExcelWorksheet* sheet5, AMconfig* configData, strin
 	// After reading in all the region profiles, we need to create a "jump" segment style for
 	// the velocity profileID found in each profile.  The SCAN XML requires a segment style for jumps,
 	// rather than just a velocity profile ID
-	string tempID;
+	std::string tempID;
 	segmentStyle ssNew;
 	// Generate a list of velocity profile ID strings to enable indexing to the position of a specific profile
-	vector<string> vpList;
+	std::vector<std::string> vpList;
 	for (int r = 0; r < (*configData).VPlist.size(); r++)
 	{
 		vpList.push_back((*configData).VPlist[r].ID);
 	}
 	// Iterate across all regions
-	for (vector<regionProfile>::iterator r = (*configData).regionProfileList.begin(); r != (*configData).regionProfileList.end(); ++r)
+	for (std::vector<regionProfile>::iterator r = (*configData).regionProfileList.begin(); r != (*configData).regionProfileList.end(); ++r)
 	{
 		// Define a segment style containing the jump velocity profile listed in region r
 		// This profile will use an auto-generated integer ID equal to the size of the profile list.
 		ssNew.integerID = (*configData).segmentStyleList.size() + 1;  // auto-populate a unique integerID for LabView
-		ssNew.ID = "Auto-generated" + to_string(ssNew.integerID);
+		ssNew.ID = "Auto-generated" + std::to_string(ssNew.integerID);
 		ssNew.isUsed = true;
 		ssNew.vpID = (*r).vIDJump;
 		// Identify the vpIntID which corresponds to vpID
-		std::vector<string>::iterator it = find(vpList.begin(), vpList.end(), ssNew.vpID);
+		std::vector<std::string>::iterator it = find(vpList.begin(), vpList.end(), ssNew.vpID);
 		ssNew.vpIntID = std::distance(vpList.begin(), it) + 1;
 		ssNew.laserMode = "";  // jump profiles don't need a laserMode value
 		// push ssNew onto (*inputConfig).segmentStyleList
@@ -370,7 +370,7 @@ void readRegionProfiles(BasicExcelWorksheet* sheet5, AMconfig* configData, strin
 	return;  // currently no return value, but error code could be returned in future
 }
 
-void readPartFiles(BasicExcelWorksheet* sheet6, AMconfig* configData, string tabName)
+void readPartFiles(BasicExcelWorksheet* sheet6, AMconfig* configData, std::string tabName)
 {	// Read the global parameters tab of an America Makes Excel configuration file.
 	// This is called by AMconfigRead
 
@@ -378,7 +378,7 @@ void readPartFiles(BasicExcelWorksheet* sheet6, AMconfig* configData, string tab
 	// Loop until we run into a blank filename
 	ipFile ipf;
 	int rowNum = 6;
-	string temp = parseToString(sheet6->Cell(rowNum, 0));
+	std::string temp = parseToString(sheet6->Cell(rowNum, 0));
 	while (temp != "")
 	{	// Filename is populated.  Add config-file path to filename, save it, and read the rest of the row
 		ipf.fn = (*configData).configPath + "\\" + temp;
@@ -405,7 +405,7 @@ void readPartFiles(BasicExcelWorksheet* sheet6, AMconfig* configData, string tab
 	return;
 }
 
-void readTrajProcessing(BasicExcelWorksheet* sheet7, AMconfig* configData, string tabName)
+void readTrajProcessing(BasicExcelWorksheet* sheet7, AMconfig* configData, std::string tabName)
 {	// Read the trajectory processing tab of an America Makes Excel configuration file.
 	// This is called by AMconfigRead
 
@@ -430,7 +430,7 @@ void readTrajProcessing(BasicExcelWorksheet* sheet7, AMconfig* configData, strin
 	return;
 }
 
-void readStripes(BasicExcelWorksheet* sheet8, AMconfig* configData, string tabName)
+void readStripes(BasicExcelWorksheet* sheet8, AMconfig* configData, std::string tabName)
 {
 	// Read the optional single stripes on tab 8.  If the list is blank, (*configData).stripeList will be empty 
 	// and allStripesMarked set to true (so that stripes will be ignored when writing scan XML).
@@ -438,7 +438,7 @@ void readStripes(BasicExcelWorksheet* sheet8, AMconfig* configData, string tabNa
 	try {
 		// See if there is a segment style populated on the first input row
 		int rowNum = 6;
-		string temp = parseToString(sheet8->Cell(rowNum, 2));  // column C
+		std::string temp = parseToString(sheet8->Cell(rowNum, 2));  // column C
 		if (temp != "") {
 			// At least one stripe is present.  Read the global stripe jump profile and skywriting mode values before reading the stripe list
 
@@ -448,18 +448,18 @@ void readStripes(BasicExcelWorksheet* sheet8, AMconfig* configData, string tabNa
 			//
 			// Create a segment style referencing stripeJumpVID
 			segmentStyle ssNew;
-			string tempID;
+			std::string tempID;
 			ssNew.integerID = (*configData).segmentStyleList.size() + 1;  // auto-populate a unique integerID for LabView
-			ssNew.ID = "Auto-generated" + to_string(ssNew.integerID);
+			ssNew.ID = "Auto-generated" + std::to_string(ssNew.integerID);
 			ssNew.isUsed = true;
 			// Identify the integer ID of stripeJumpVID
-			vector<string> vpList;
+			std::vector<std::string> vpList;
 			for (int r = 0; r < (*configData).VPlist.size(); r++)
 			{
 				vpList.push_back((*configData).VPlist[r].ID);
 			}
 			ssNew.vpID = (*configData).stripeJumpVPID;
-			std::vector<string>::iterator it = find(vpList.begin(), vpList.end(), ssNew.vpID);  // Identify vpIntID which corresponds to vpID
+			std::vector<std::string>::iterator it = find(vpList.begin(), vpList.end(), ssNew.vpID);  // Identify vpIntID which corresponds to vpID
 			ssNew.vpIntID = std::distance(vpList.begin(), it) + 1;
 			ssNew.laserMode = "";  // jump profiles don't need a laserMode value
 			// push ssNew onto (*inputConfig).segmentStyleList
@@ -472,7 +472,7 @@ void readStripes(BasicExcelWorksheet* sheet8, AMconfig* configData, string tabNa
 			singleStripe stripe;
 			double stripeLayerHeight = 0.0;  // holds stripe height value read from file, which may be empty
 			// Create a list of segment styles so that we can index from string-input ID to auto-generated integer ID's
-			vector<string> segStyleList;
+			std::vector<std::string> segStyleList;
 			for (int r = 0; r < (*configData).segmentStyleList.size(); r++)
 			{
 				segStyleList.push_back((*configData).segmentStyleList[r].ID);
@@ -486,7 +486,7 @@ void readStripes(BasicExcelWorksheet* sheet8, AMconfig* configData, string tabNa
 				(*configData).allStripesMarked = false;  // we have at least one stripe, so we'll indicate that they need to be marked
 				stripe.segmentStyleID = temp;
 				// Identify the integer segment style ID which corresponds to temp
-				std::vector<string>::iterator it2 = find(segStyleList.begin(), segStyleList.end(), temp);
+				std::vector<std::string>::iterator it2 = find(segStyleList.begin(), segStyleList.end(), temp);
 				stripe.segmentStyleIntID = std::distance(segStyleList.begin(), it2) + 1;
 
 				// Read the stripe trajectory#
@@ -536,12 +536,12 @@ AMconfig AMconfigRead(const std::string& configFilename)
 
 	BasicExcel excelFile;
 	AMconfig configData;	// create the output structure
-	string tabName;
+	std::string tabName;
 
 	errorCheckStructure errorData;  // set up error reporting structure
 	bool haltNow = true;  // any error encountered will result in immediate quit and report
-	string errorMsg;
-	string functionWithIssue;
+	std::string errorMsg;
+	std::string functionWithIssue;
 	// save config filename and path in configData
 	configData.configFilename = configFilename.c_str();  // full path to the file along with the filename itself
 	size_t slashPos = configFilename.find_last_of("\\");
@@ -573,7 +573,7 @@ AMconfig AMconfigRead(const std::string& configFilename)
 	}
 
 	// Verify that the config file's version number is compatible with this code
-	string versionString = "";
+	std::string versionString = "";
 	try {
 		versionString = parseToString(oneSheet->Cell(1, 1));	// version# should be an integer, but read as if a string in case we later change to double, e.g. 2.1
 	}
@@ -583,9 +583,9 @@ AMconfig AMconfigRead(const std::string& configFilename)
 		updateErrorResults(errorData, haltNow, "AMconfigRead", errorMsg, "", configData.configFilename, configData.configPath);
 	}
 	
-	if (versionString != to_string(AMconfigFileVersion))
+	if (versionString != std::to_string(AMconfigFileVersion))
 	{
-		errorMsg = "Incompatible config file:  this code requires version " + to_string(AMconfigFileVersion) + " but config file is version " + versionString;
+		errorMsg = "Incompatible config file:  this code requires version " + std::to_string(AMconfigFileVersion) + " but config file is version " + versionString;
 		updateErrorResults(errorData, haltNow, "AMconfigRead", errorMsg, "", configData.configFilename, configData.configPath);
 	}
 	else

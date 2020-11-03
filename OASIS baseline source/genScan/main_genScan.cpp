@@ -42,8 +42,6 @@ from the configuration files.
 #include "io_functions.h"
 
 
-using namespace std;
-
 constexpr auto DISPLAYLAYER = 0;
 constexpr auto DISPLAYSCANPATH = 0;
 constexpr auto SVGSCANTARGET = 1;
@@ -100,15 +98,15 @@ int main(int argc, char **argv)
 	// Determine where we are (current path)
 	TCHAR filePath[MAX_PATH + 1] = "";
 	GetCurrentDirectory(MAX_PATH, filePath);
-	string currentPath = &filePath[0];
+	std::string currentPath = &filePath[0];
 
 	double a_min = 0.0;
 	double a_max = 0.0;
 	double hatchAngle;
-	ofstream stfile;
+	std::ofstream stfile;
 	AMconfig configData;
 	errorCheckStructure errorData;  // holds results of any errors encountered
-	string errorMsg;
+	std::string errorMsg;
 	double fullHatchOffset;
 	// Define variables re-used in each layer iteration
 	layer L;
@@ -117,7 +115,7 @@ int main(int argc, char **argv)
 
 	// Begin by parsing the command-line arguments, if any.
 	// argc indicates the number of command-line arguments entered by the user
-	string configFilename = "";
+	std::string configFilename = "";
 	if (argc > 1)
 	{
 		configFilename = argv[1];
@@ -125,7 +123,7 @@ int main(int argc, char **argv)
 	else
 	{
 		// no config file specified... most likely the user tried to run genLayer or genScan directly
-		string errMsg = "Please use createScanpaths.exe to handle layer and scan generation. genScan.exe and genLayer.exe are helper functions only\n";
+		std::string errMsg = "Please use createScanpaths.exe to handle layer and scan generation. genScan.exe and genLayer.exe are helper functions only\n";
 		system("pause");
 		return -1;
 	}
@@ -135,7 +133,7 @@ int main(int argc, char **argv)
 
 	// Determine which layers to process in this function call
 	// First, get total layers to process from the Excel configuration file
-	string xmlFolder = configData.layerOutputFolder + "\\XMLdir\\";
+	std::string xmlFolder = configData.layerOutputFolder + "\\XMLdir\\";
 	fileCount layerFileInfo = countLayerFiles(xmlFolder);	// provides number of XML files and min/max layer numbers
 	
 	// If there are no layer files in the folder, report an error and quit
@@ -165,13 +163,13 @@ int main(int argc, char **argv)
 	if (sLayer > layerFileInfo.maxLayer)	// check if user-selected start layer# is greater than actual last layer file
 	{
 		// If the desired starting layer# is above the actual highest layer#, report an error and quit
-		errorMsg = "The starting layer# indicated in the config file (" + to_string(sLayer) + ") is beyond the highest layer file in this folder (" + to_string(layerFileInfo.maxLayer) + ")\n";
+		errorMsg = "The starting layer# indicated in the config file (" + std::to_string(sLayer) + ") is beyond the highest layer file in this folder (" + std::to_string(layerFileInfo.maxLayer) + ")\n";
 		updateErrorResults(errorData, true, "genScan", errorMsg, "", configData.configFilename, configData.configPath);
 	}
 	if (configData.endingScanLayer < layerFileInfo.minLayer)	// check if user wants to end scan generation below the actual first layer file
 	{
 		// If the desired ending layer# is below the actual lowest layer#, report an error and quit
-		errorMsg = "The ending layer# indicated in the config file (" + to_string(configData.endingScanLayer) + ") is below the lowest layer file in this folder (" + to_string(layerFileInfo.minLayer) + ")\n";
+		errorMsg = "The ending layer# indicated in the config file (" + std::to_string(configData.endingScanLayer) + ") is below the lowest layer file in this folder (" + std::to_string(layerFileInfo.minLayer) + ")\n";
 		updateErrorResults(errorData, true, "genScan", errorMsg, "", configData.configFilename, configData.configPath);
 	}
 	
@@ -190,22 +188,22 @@ int main(int argc, char **argv)
 	int numLayer = layerFileInfo.numFiles;
 
 	int close = 0;
-	string cmd;
+	std::string cmd;
 	double currentContourOffset = 0.0; // used to compute offset from part + inter-contour spacing for individual contours
 
 	//get viewer parameters
-	string vmd = "copy \"" + configData.layerOutputFolder + "\\vConfig.txt\"> NUL";
-	system(vmd.c_str());
-	ifstream vfile("vConfig.txt");
+	std::string vmd = "copy \"" + configData.layerOutputFolder + "\\vConfig.txt\"> NUL";
+	std::system(vmd.c_str());
+	std::ifstream vfile("vConfig.txt");
 	char c;
 	double mag, xo, yo;
-	string line;
+	std::string line;
 	getline(vfile, line);
-	istringstream ss(line);
+	std::istringstream ss(line);
 	ss >> mag >> c >> xo >> c >> yo;
 
 	// Generate a list of region profile tags, to enable indexing from a region's tag to a specific profile in regionProfileList
-	vector<string> tagList;
+	std::vector<std::string> tagList;
 	for (int r = 0; r < configData.regionProfileList.size(); r++)
 	{	tagList.push_back(configData.regionProfileList[r].Tag);	}
 
@@ -220,28 +218,28 @@ int main(int argc, char **argv)
 	// PROCESS SOME LAYERS
 	for (int i = sLayer; i <= fLayer; i++)
 	{
-		cout << "Processing layer " << i << " of " << layerFileInfo.maxLayer << endl;
+		std::cout << "Processing layer " << i << " of " << layerFileInfo.maxLayer << std::endl;
 		// reset cursor position
 		SetConsoleCursorPosition(hStdout, cursorPosition);
 
 		clearVars(&L, &T, &tempPath);
 		//generate the output filename by pre-pending appropriate numbers of zeroes
-		string zs;
-		for (int k = 0; k <(int)(to_string(numLayer)).size() - (int)(to_string(i)).size(); k++)
+		std::string zs;
+		for (int k = 0; k <(int)(std::to_string(numLayer)).size() - (int)(std::to_string(i)).size(); k++)
 		{
 			zs = zs + "0";
 		};
-		string lfn = "layer_" + zs + to_string(i) + ".xml";
-		string fullLayerPath = configData.layerOutputFolder + "\\XMLdir\\" + lfn;
-		string svfn = "scan_" + zs + to_string(i) + ".svg";
-		string xfn = "scan_" + zs + to_string(i) + ".xml";
+		std::string lfn = "layer_" + zs + std::to_string(i) + ".xml";
+		std::string fullLayerPath = configData.layerOutputFolder + "\\XMLdir\\" + lfn;
+		std::string svfn = "scan_" + zs + std::to_string(i) + ".svg";
+		std::string xfn = "scan_" + zs + std::to_string(i) + ".xml";
 
 		HRESULT hr = CoInitialize(NULL);  // attempt to set up the output Domain Object Model (DOM).  If this fails, we can't create XML
 		int bCont = 1;
 		if (SUCCEEDED(hr))
 		{
 			//read the appropriate XML layer file
-			wstring wfn(fullLayerPath.begin(), fullLayerPath.end());
+			std::wstring wfn(fullLayerPath.begin(), fullLayerPath.end());
 			LPCWSTR  wszValue = wfn.c_str();
 			int fn_err = loadDOM(wszValue);
 			if (fn_err != 0)
@@ -257,20 +255,20 @@ int main(int argc, char **argv)
 				L = traverseDOM();
 				int verifyResult = verifyLayerStructure(configData, fullLayerPath, L, tagList);  // check that the layer is valid.  If not, function will end genScan execution
 				// determine the bounding box of the layer
-				vector<vertex> BB;
+				std::vector<vertex> BB;
 				BB = getBB(L);
 
 				// Identify the set of trajectory numbers encountered in the Layer file, and
 				// the regions which fall under each trajectory.  This step only populates the region numbers, 
 				// and does not actually create the scan paths within each trajectory
-				vector<trajectory> trajectoryList;
+				std::vector<trajectory> trajectoryList;
 				trajectoryList = identifyTrajectories(configData, L, i);
 				// Sort the trajectory list by trajectoryNum
 				sort(trajectoryList.begin(), trajectoryList.end(), compareTrajNums);
 				
 				// Create a list of the existing trajectory numbers
-				vector<int> trajIndex;
-				for (vector<trajectory>::iterator itl = trajectoryList.begin(); itl != trajectoryList.end(); ++itl)
+				std::vector<int> trajIndex;
+				for (std::vector<trajectory>::iterator itl = trajectoryList.begin(); itl != trajectoryList.end(); ++itl)
 				{
 					trajIndex.push_back((*itl).trajectoryNum);	// This creates a list of trajectories, but not in numerical order
 					#if printTraj
@@ -296,10 +294,10 @@ int main(int argc, char **argv)
 						cout << "	This trajectory contains " << numRegions << " regions" << endl;
 					#endif
 					int regionIndex, rProfileNum;
-					string regionType, regionTag;
-					vector<string>::iterator temp3;
+					std::string regionType, regionTag;
+					std::vector<std::string>::iterator temp3;
 					regionProfile* rProfile;
-					vector<int> regionsWithinPath;  // list of regions to be hatched or contoured together (same trajectory, tag and type)
+					std::vector<int> regionsWithinPath;  // list of regions to be hatched or contoured together (same trajectory, tag and type)
 
 					for (int rNum = 0; rNum != numRegions; ++rNum)
 					{
@@ -319,7 +317,7 @@ int main(int argc, char **argv)
 							regionTag = trajectoryList[tNum].trajRegionTags[rNum];
 							// determine the regionProfile which corresponds to regionTag
 							temp3 = find(tagList.begin(), tagList.end(), regionTag);
-							rProfileNum = distance(tagList.begin(), temp3);
+							rProfileNum = std::distance(tagList.begin(), temp3);
 							rProfile = &(configData.regionProfileList[rProfileNum]); // Create shortcut to the indicated region profile
 							#if printTraj							
 								cout << "		Creating scanpath for trajectory " << trajectoryList[tNum].trajectoryNum << " > region tag " << regionTag << " > type " << regionType << ", regionNum " << rNum << endl;
@@ -425,13 +423,13 @@ int main(int argc, char **argv)
 				cout << "Trajectory loop completed; preparing to write XML and SVG files" << endl;
 				#endif
 				// write the XML schema to a DOM and then to a file
-				string fullXMLpath = configData.scanOutputFolder + "\\XMLdir\\" + xfn;
+				std::string fullXMLpath = configData.scanOutputFolder + "\\XMLdir\\" + xfn;
 				createSCANxmlFile(fullXMLpath, i, configData, trajectoryList);
 
 				// if user wants to generate SVG files and we are either on the first layer or a multiple of the SVG interval, do so
 				if ( (configData.createScanSVG == 1) && ((i % configData.scanSVGinterval == 0) | (i==0)) ) {
 					//write SCAN output to SVG
-					string fullSVGpath = configData.scanOutputFolder + "\\SVGdir\\" + svfn;
+					std::string fullSVGpath = configData.scanOutputFolder + "\\SVGdir\\" + svfn;
 					scan2SVG(fullSVGpath, trajectoryList, 2000, mag, xo, yo);
 				}
 				#if printTraj
@@ -447,15 +445,15 @@ int main(int argc, char **argv)
 
 	//write details to the *.cfg file for next call 
 	stfile.open("gs_sts.cfg");
-	stfile << 1 << endl;		// started
-	stfile << fLayer << endl;	// last layer completed
-	stfile << finished << endl;	// finished flag
-	stfile << configData.scanOutputFolder << endl;	// config file folder
+	stfile << 1 << std::endl;		// started
+	stfile << fLayer << std::endl;	// last layer completed
+	stfile << finished << std::endl;	// finished flag
+	stfile << configData.scanOutputFolder << std::endl;	// config file folder
 	stfile.close();
 
 	return 0;
 
 CleanUp:
-	cout << "CleanUp section reached" << endl;
+	std::cout << "CleanUp section reached" << std::endl;
 	return 0;
 };

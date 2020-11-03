@@ -24,28 +24,28 @@ an XML scanpath file
 
 void displayLayer(layer L)
 {
-	cout << "Thickness: " << L.thickness << endl;
+	std::cout << "Thickness: " << L.thickness << std::endl;
 	slice s = L.s;
-	cout << "Number of regions : " << (s.rList).size() << endl;
-	cout << "Number of vertices : " << (L.vList).size() << endl;
+	std::cout << "Number of regions : " << (s.rList).size() << std::endl;
+	std::cout << "Number of vertices : " << (L.vList).size() << std::endl;
 #if SHOWVERTEX
 	int i = 1;
-	for (vector<vertex>::iterator vt = (L.vList).begin(); vt != (L.vList).end(); ++vt)
+	for (std::vector<vertex>::iterator vt = (L.vList).begin(); vt != (L.vList).end(); ++vt)
 	{
-		cout <<i++<<" "<<  (*vt).x << ", " << (*vt).y << endl;		
+		std::cout <<i++<<" "<<  (*vt).x << ", " << (*vt).y << std::endl;
 	}
 
 #endif
-	for (vector<region>::iterator it = (s.rList).begin(); it != (s.rList).end(); ++it)
+	for (std::vector<region>::iterator it = (s.rList).begin(); it != (s.rList).end(); ++it)
 	{
-		cout << "Region Type:  " << (*it).type << endl;
-		cout << "Region Tag:  " << (*it).tag << endl;
-		cout << "No. of edges: " << ((*it).eList).size() << endl;
+		std::cout << "Region Type:  " << (*it).type << std::endl;
+		std::cout << "Region Tag:  " << (*it).tag << std::endl;
+		std::cout << "No. of edges: " << ((*it).eList).size() << std::endl;
 #if SHOWVERTEX
 		int i = 1;
-		for (vector<edge>::iterator et = ((*it).eList).begin(); et != ((*it).eList).end(); ++et)
+		for (std::vector<edge>::iterator et = ((*it).eList).begin(); et != ((*it).eList).end(); ++et)
 		{
-			cout <<i++<< " Start:" << ((*et).s).x << ", " << ((*et).s).y << "; Finish: " << ((*et).f).x << ", " << ((*et).f).y << endl;
+			std::cout <<i++<< " Start:" << ((*et).s).x << ", " << ((*et).s).y << "; Finish: " << ((*et).f).x << ", " << ((*et).f).y << std::endl;
 		}
 		
 #endif

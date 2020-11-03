@@ -41,7 +41,7 @@ struct sts
 	int started;	// whether processing has started for the part
 	int lastLayer;	// last layer number done in the current call
 	int finished;	// whether part is finished
-	string dn = "NULL";	// directory of the config file
+	std::string dn = "NULL";	// directory of the config file
 };
 
 //identify current cursor position, to enable it to be reset between layers
@@ -51,16 +51,16 @@ COORD GetConsoleCursorPosition(HANDLE hConsoleOutput);
 bool dirExists(const std::string& dirName_in);
 
 //find maximum in a vector
-double find_max(vector<double>in);
+double find_max(std::vector<double>in);
 
 //fin minimum in a vector
-double find_min(vector<double>in);
+double find_min(std::vector<double>in);
 
 //read layer-processing history from gl_sts.cfg (from genLayer) or gs_sts.cfg (from genScan)
-sts readStatus(string filename);
+sts readStatus(std::string filename);
 
 //returns true of s is a string of numerals only (a valid integer)
-bool has_only_digits(const string s);
+bool has_only_digits(const std::string s);
 
 //Holds output from countFiles function
 struct fileCount
@@ -71,7 +71,7 @@ struct fileCount
 };
 
 //counts the number of layer xml files in a particular directory (prefaced with "layer_" and ending in .xml)
-fileCount countLayerFiles(string path);
+fileCount countLayerFiles(std::string path);
 
 //counts the number of scan xml files in a particular directory (prefaced with "scan_" and ending in .xml)
-fileCount countScanFiles(string path);
+fileCount countScanFiles(std::string path);

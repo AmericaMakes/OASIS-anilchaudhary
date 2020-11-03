@@ -47,7 +47,7 @@ bool Block::Create(const wchar_t* filename)
 	wcstombs(name, filename, filenameLength);
 	name[filenameLength] = 0;
 
-	file_.open(name, ios_base::out | ios_base::trunc);
+	file_.open(name, std::ios_base::out | std::ios_base::trunc);
 	file_.close();
 	file_.clear();
 
@@ -57,7 +57,7 @@ bool Block::Create(const wchar_t* filename)
 	return ret;
 }
 
-bool Block::Open(const wchar_t* filename, ios_base::openmode mode)
+bool Block::Open(const wchar_t* filename, std::ios_base::openmode mode)
 // PURPOSE: Open an existing block file.
 // PROMISE: Return true if file is successfully opened, false if otherwise.
 {
@@ -66,20 +66,20 @@ bool Block::Open(const wchar_t* filename, ios_base::openmode mode)
 	filename_.resize(filenameLength+1, 0);
 	wcstombs(&*(filename_.begin()), filename, filenameLength);
 
-	file_.open(&*(filename_.begin()), mode | ios_base::binary);
+	file_.open(&*(filename_.begin()), mode | std::ios_base::binary);
 	if (!file_.is_open()) return false;
 
 	mode_ = mode;
 	
 	// Calculate filesize
-	if (mode & ios_base::in)
+	if (mode & std::ios_base::in)
 	{
-		file_.seekg(0, ios_base::end);
+		file_.seekg(0, std::ios_base::end);
 		fileSize_ = file_.tellg();
 	}
-	else if (mode & ios_base::out)
+	else if (mode & std::ios_base::out)
 	{
-		file_.seekp(0, ios_base::end);
+		file_.seekp(0, std::ios_base::end);
 		fileSize_ = file_.tellp();
 	}
 	else
@@ -118,7 +118,7 @@ bool Block::Read(size_t index, char* block)
 // EXPLAIN: index is from [0..].
 // PROMISE: Return true if data are successfully read, false if otherwise.
 {
-	if (!(mode_ & ios_base::in)) return false;
+	if (!(mode_ & std::ios_base::in)) return false;
 	if (index < indexEnd_)
 	{
 		file_.seekg(index * blockSize_);
@@ -133,7 +133,7 @@ bool Block::Write(size_t index, const char* block)
 // EXPLAIN: index is from [0..].
 // PROMISE: Return true if data are successfully written, false if otherwise.
 {
-	if (!(mode_ & ios_base::out)) return false;
+	if (!(mode_ & std::ios_base::out)) return false;
 	file_.seekp(index * blockSize_);
 	file_.write(block, blockSize_);
 	if (indexEnd_ <= index) 
@@ -143,7 +143,7 @@ bool Block::Write(size_t index, const char* block)
 	}
 	file_.close();
 	file_.clear();
-	file_.open(&*(filename_.begin()), mode_ | ios_base::binary);
+	file_.open(&*(filename_.begin()), mode_ | std::ios_base::binary);
 	return file_.is_open();		
 }
 
@@ -152,7 +152,7 @@ bool Block::Swap(size_t index1, size_t index2)
 // EXPLAIN: index1 and index2 are from [0..].
 // PROMISE: Return true if data are successfully swapped, false if otherwise.
 {
-	if (!(mode_ & ios_base::out)) return false;
+	if (!(mode_ & std::ios_base::out)) return false;
 	if (index1 < indexEnd_ && index2 < indexEnd_)
 	{
 		if (index1 == index2) return true;
@@ -178,7 +178,7 @@ bool Block::Move(size_t from, size_t to)
 // EXPLAIN: from and to are from [0..].
 // PROMISE: Return true if data are successfully moved, false if otherwise.
 {
-	if (!(mode_ & ios_base::out)) return false;
+	if (!(mode_ & std::ios_base::out)) return false;
 	if (from < indexEnd_ && to < indexEnd_)
 	{
 		if (to > from)
@@ -205,7 +205,7 @@ bool Block::Insert(size_t index, const char* block)
 // EXPLAIN: index is from [0..].
 // PROMISE: Return true if data are successfully inserted, false if otherwise.
 {
-	if (!(mode_ & ios_base::out)) return false;
+	if (!(mode_ & std::ios_base::out)) return false;
 	if (index <= indexEnd_)
 	{
 		// Write block to end of file
@@ -227,7 +227,7 @@ bool Block::Erase(size_t index)
 // EXPLAIN: index is from [0..].
 // PROMISE: Return true if data are successfully erased, false if otherwise.
 {
-	if (!(mode_ & ios_base::out)) return false;
+	if (!(mode_ & std::ios_base::out)) return false;
 	if (index < indexEnd_)
 	{
 		fileSize_ -= blockSize_;
@@ -245,22 +245,22 @@ bool Block::Erase(size_t index)
 			}
 		}
 		file_.close();
-		file_.open(&*(filename_.begin()), ios_base::out | ios_base::trunc | ios_base::binary);
+		file_.open(&*(filename_.begin()), std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
 		file_.write(buffer, fileSize_);	// Write the new file.
 		file_.close();
-		file_.open(&*(filename_.begin()), mode_ | ios_base::binary);
+		file_.open(&*(filename_.begin()), mode_ | std::ios_base::binary);
 		delete[] buffer;
 		return true;
 	}
 	else return false;
 }
 
-bool Block::Erase(vector<size_t>& indices)
+bool Block::Erase(std::vector<size_t>& indices)
 // PURPOSE: Erase blocks of data in the opened file at the index positions.
 // EXPLAIN: Each index in indices is from [0..].
 // PROMISE: Return true if data are successfully erased, false if otherwise.
 {
-	if (!(mode_ & ios_base::out)) return false;
+	if (!(mode_ & std::ios_base::out)) return false;
 
 	// Read entire file except the blocks to be deleted into memory.
 	size_t maxIndices = indices.size();
@@ -287,10 +287,10 @@ bool Block::Erase(vector<size_t>& indices)
 	indexEnd_ -= maxIndices;
 	
 	file_.close();
-	file_.open(&*(filename_.begin()), ios_base::out | ios_base::trunc | ios_base::binary);
+	file_.open(&*(filename_.begin()), std::ios_base::out | std::ios_base::trunc | std::ios_base::binary);
 	file_.write(buffer, fileSize_);	// Write the new file.
 	file_.close();
-	file_.open(&*(filename_.begin()), mode_ | ios_base::binary);
+	file_.open(&*(filename_.begin()), mode_ | std::ios_base::binary);
 	delete[] buffer;
 	return true;
 }
@@ -308,7 +308,7 @@ CompoundFile::Header::Header() :
 	BATCount_(1), propertiesStart_(1) 
 {
 	BATArray_[0] = 0;	// Initial BAT indices at block 0 (=block 1 in Block)
-	fill (BATArray_+1, BATArray_+109, -1);	// Rest of the BATArray is empty
+	std::fill (BATArray_+1, BATArray_+109, -1);	// Rest of the BATArray is empty
 	Initialize();
 }
 
@@ -384,7 +384,7 @@ CompoundFile::Property::Property() :
 	seconds1_(0), days1_(0), seconds2_(0), days2_(0),
 	startBlock_(-2), size_(0)
 {
-	fill (name_, name_+32, 0);
+	std::fill (name_, name_+32, 0);
 }
 
 void CompoundFile::Property::Write(char* block)
@@ -491,7 +491,7 @@ bool CompoundFile::Create(const wchar_t* filename)
 	return true;
 }
 
-bool CompoundFile::Open(const wchar_t* filename, ios_base::openmode mode)
+bool CompoundFile::Open(const wchar_t* filename, std::ios_base::openmode mode)
 // PURPOSE: Open an existing compound file.
 // PROMISE: Return true if file is successfully opened, false if otherwise.
 {
@@ -597,7 +597,7 @@ int CompoundFile::ChangeDirectory(const wchar_t* path)
 		}
 
 		wchar_t* directory = new wchar_t[npos-ipos+1];
-		copy (path+ipos, path+npos, directory);
+		std::copy (path+ipos, path+npos, directory);
 		directory[npos-ipos] = 0;
 		currentDirectory_ = FindProperty(currentDirectory_, directory);
 		delete[] directory;
@@ -637,11 +637,11 @@ int CompoundFile::PresentWorkingDirectory(wchar_t* path)
 // REQUIRE: path must be large enough to receive the full path information.
 {
 	previousDirectories_.push_back(currentDirectory_);
-	vector<wchar_t> fullpath;
+	std::vector<wchar_t> fullpath;
 	do
 	{
 		size_t directoryLength = wcslen(currentDirectory_->self_->name_);
-		vector<wchar_t> directory(directoryLength+1);
+		std::vector<wchar_t> directory(directoryLength+1);
 		directory[0] = L'\\';
 		copy (currentDirectory_->self_->name_,
 			  currentDirectory_->self_->name_+directoryLength,
@@ -658,7 +658,7 @@ int CompoundFile::PresentWorkingDirectory(wchar_t* path)
 	return SUCCESS;
 }
 
-int CompoundFile::PresentWorkingDirectory(vector<wchar_t>& path)
+int CompoundFile::PresentWorkingDirectory(std::vector<wchar_t>& path)
 // PURPOSE: Get the full path of the current directory in the compound file.
 {
 	previousDirectories_.push_back(currentDirectory_);
@@ -666,7 +666,7 @@ int CompoundFile::PresentWorkingDirectory(vector<wchar_t>& path)
 	do
 	{
 		size_t directoryLength = wcslen(currentDirectory_->self_->name_);
-		vector<wchar_t> directory(directoryLength+1);
+		std::vector<wchar_t> directory(directoryLength+1);
 		directory[0] = L'\\';
 		copy (currentDirectory_->self_->name_,
 			  currentDirectory_->self_->name_+directoryLength,
@@ -741,7 +741,7 @@ int CompoundFile::DelTree(const wchar_t* path)
 	return SUCCESS;
 }
 
-int CompoundFile::DirectoryList(vector<vector<wchar_t> >& list, const wchar_t* path)
+int CompoundFile::DirectoryList(std::vector<std::vector<wchar_t> >& list, const wchar_t* path)
 {
 	previousDirectories_.push_back(currentDirectory_);
 	if (path != 0)
@@ -751,7 +751,7 @@ int CompoundFile::DirectoryList(vector<vector<wchar_t> >& list, const wchar_t* p
 	}
 	list.clear();
 	size_t maxChildren = currentDirectory_->children_.size();
-	vector<wchar_t> name(32);
+	std::vector<wchar_t> name(32);
 	for (size_t i=0; i<maxChildren; ++i)
 	{
 		wcscpy(&*(name.begin()), currentDirectory_->children_[i]->self_->name_);
@@ -831,7 +831,7 @@ int CompoundFile::ReadFile(const wchar_t* path, char* data)
 	{
 		buffer = new char[DataSize(propertyTrees_->self_->startBlock_, true)];
 		ReadData(propertyTrees_->self_->startBlock_, buffer, true);
-		copy (buffer, buffer+propertyTrees_->self_->size_, data);
+		std::copy (buffer, buffer+propertyTrees_->self_->size_, data);
 		delete[] buffer;
 		return SUCCESS;
 	}
@@ -853,12 +853,12 @@ int CompoundFile::ReadFile(const wchar_t* path, char* data)
 		ReadData(property->self_->startBlock_, buffer, false);
 	}
 	// Truncated the retrieved data to the actual file size.
-	copy (buffer, buffer+property->self_->size_, data);
+	std::copy (buffer, buffer+property->self_->size_, data);
 	delete[] buffer;
 	return SUCCESS;
 }
 
-int CompoundFile::ReadFile(const wchar_t* path, vector<char>& data)
+int CompoundFile::ReadFile(const wchar_t* path, std::vector<char>& data)
 // PURPOSE: Read a file's data in the compound file.
 // PROMISE: Returns the small blocks of data stored by the Root Entry if path = "\".
 // PROMISE: data will not be set if file is not present in the compound file.
@@ -904,7 +904,7 @@ int CompoundFile::WriteFile(const wchar_t* path, const char* data, size_t size)
 	return SUCCESS;
 }
 
-int CompoundFile::WriteFile(const wchar_t* path, const vector<char>& data, size_t size)
+int CompoundFile::WriteFile(const wchar_t* path, const std::vector<char>& data, size_t size)
 // PURPOSE: Write data to a file in the compound file.
 // PROMISE: The file's original data will be replaced by the new data.
 {
@@ -923,7 +923,7 @@ bool CompoundFile::Create(const char* filename)
 	return ret;
 }
 
-bool CompoundFile::Open(const char* filename, ios_base::openmode mode)
+bool CompoundFile::Open(const char* filename, std::ios_base::openmode mode)
 {
 	size_t filenameLength = strlen(filename);
 	wchar_t* wname = new wchar_t[filenameLength+1];
@@ -971,9 +971,9 @@ int CompoundFile::PresentWorkingDirectory(char* path)
 	return ret;
 }
 
-int CompoundFile::PresentWorkingDirectory(vector<char>& path)
+int CompoundFile::PresentWorkingDirectory(std::vector<char>& path)
 {
-	vector<wchar_t> wpath;
+	std::vector<wchar_t> wpath;
 	int ret = PresentWorkingDirectory(wpath);
 	if (ret == SUCCESS)
 	{
@@ -1049,7 +1049,7 @@ int CompoundFile::ReadFile(const char* path, char* data)
 	delete[] wpath;
 	return ret;
 }
-int CompoundFile::ReadFile(const char* path, vector<char>& data)
+int CompoundFile::ReadFile(const char* path, std::vector<char>& data)
 {
 	size_t pathLength = strlen(path);
 	wchar_t* wpath = new wchar_t[pathLength+1];
@@ -1069,7 +1069,7 @@ int CompoundFile::WriteFile(const char* path, char* data, size_t size)
 	delete[] wpath;
 	return ret;
 }
-int CompoundFile::WriteFile(const char* path, vector<char>& data, size_t size)
+int CompoundFile::WriteFile(const char* path, std::vector<char>& data, size_t size)
 {
 	size_t pathLength = strlen(path);
 	wchar_t* wpath = new wchar_t[pathLength+1];
@@ -1081,7 +1081,7 @@ int CompoundFile::WriteFile(const char* path, vector<char>& data, size_t size)
 }
 
 /*********************** Inaccessible General Functions ***************************/
-void CompoundFile::IncreaseLocationReferences(vector<size_t> indices)
+void CompoundFile::IncreaseLocationReferences(std::vector<size_t> indices)
 // PURPOSE: Increase block location references in header, BAT indices and properties,
 // PURPOSE: which will be affected by the insertion of new indices contained in indices.
 // PROMISE: Block location references which are smaller than all the new indices
@@ -1177,7 +1177,7 @@ void CompoundFile::IncreaseLocationReferences(vector<size_t> indices)
 	}}
 }
 
-void CompoundFile::DecreaseLocationReferences(vector<size_t> indices)
+void CompoundFile::DecreaseLocationReferences(std::vector<size_t> indices)
 // PURPOSE: Decrease block location references in header, BAT indices and properties,
 // PURPOSE: which will be affected by the deletion of indices contained in indices.
 // PROMISE: BAT indices pointing to a deleted index will be redirected to point to 
@@ -1247,7 +1247,7 @@ void CompoundFile::DecreaseLocationReferences(vector<size_t> indices)
 		} while (!end);
 	}}
 	// Erase indices to be deleted from the block indices
-	sort (indices.begin(), indices.end(), greater<size_t>());
+	sort (indices.begin(), indices.end(), std::greater<size_t>());
 	{for (size_t i=0; i<maxIndices; ++i)
 	{
 		blocksIndices_.erase(blocksIndices_.begin()+indices[i]);
@@ -1324,7 +1324,7 @@ void CompoundFile::SplitPath(const wchar_t* path,
 	{
 		// Get parent path if available
 		parentpath = new wchar_t[npos+1];
-		copy (path, path+npos, parentpath);
+		std::copy (path, path+npos, parentpath);
 		parentpath[npos] = 0;
 		++npos;
 	}
@@ -1332,7 +1332,7 @@ void CompoundFile::SplitPath(const wchar_t* path,
 	// Get property name (ignore initial "\" if present)
 	if (npos==0 && pathLength > 0 && path[0] == L'\\') ++npos;
 	propertyname = new wchar_t[pathLength-npos+1];
-	copy (path+npos, path+pathLength, propertyname);
+	std::copy (path+npos, path+pathLength, propertyname);
 	propertyname[pathLength-npos] = 0;	
 }
 
@@ -1438,7 +1438,7 @@ size_t CompoundFile::DataSize(size_t startIndex, bool isBig)
 // PROMISE: Returns the total size occupied by the property which is the total 
 // PROMISE: number of blocks occupied multiply by the block size.
 {
-	vector<size_t> indices;
+	std::vector<size_t> indices;
 	if (isBig) 
 	{
 		GetBlockIndices(startIndex, indices, true);
@@ -1459,7 +1459,7 @@ size_t CompoundFile::ReadData(size_t startIndex, char* data, bool isBig)
 // PROMISE: Returns the total size occupied by the property which is the total 
 // PROMISE: number of blocks occupied multiply by the block size.
 {
-	vector<size_t> indices;
+	std::vector<size_t> indices;
 	if (isBig)
 	{
 		GetBlockIndices(startIndex, indices, true);
@@ -1487,7 +1487,7 @@ size_t CompoundFile::ReadData(size_t startIndex, char* data, bool isBig)
 		for (size_t i=0; i<maxIndices; ++i)
 		{
 			size_t start = (indices[i] - minBlock*smallBlocksPerBigBlock)*header_.smallBlockSize_;
-			copy (buffer+start, 
+			std::copy (buffer+start,
 				  buffer+start+header_.smallBlockSize_, 
 				  data+i*header_.smallBlockSize_);
 		}
@@ -1508,7 +1508,7 @@ size_t CompoundFile::WriteData(const char* data, size_t size, int startIndex, bo
 		if (size==0 && startIndex==-2) return startIndex;
 
 		// Get present indices
-		vector<size_t> indices;
+		std::vector<size_t> indices;
 		GetBlockIndices(startIndex, indices, true);
 		size_t maxPresentBlocks = indices.size();
 
@@ -1525,7 +1525,7 @@ size_t CompoundFile::WriteData(const char* data, size_t size, int startIndex, bo
 			else startIndex = -2;
 
 			// Get indices of blocks to delete
-			vector<size_t> indicesToRemove(extraBlocks);
+			std::vector<size_t> indicesToRemove(extraBlocks);
 			copy (indices.begin()+maxNewBlocks, indices.end(), indicesToRemove.begin());
 			indices.erase(indices.begin()+maxNewBlocks, indices.end());
 
@@ -1577,7 +1577,7 @@ size_t CompoundFile::WriteData(const char* data, size_t size, int startIndex, bo
 			else newIndex = indices[curIndex];
 
 			// Write extra block after increasing its size to the minimum block size
-			vector<char> tempdata(header_.bigBlockSize_, 0);
+			std::vector<char> tempdata(header_.bigBlockSize_, 0);
 			copy (data+curIndex*header_.bigBlockSize_, data+curIndex*header_.bigBlockSize_+extraSize, tempdata.begin());
 			file_.Write(newIndex+1, &*(tempdata.begin()));			
 		}
@@ -1592,13 +1592,13 @@ size_t CompoundFile::WriteData(const char* data, size_t size, int startIndex, bo
 			size_t newIndex = GetFreeBlockIndex(true);
 			fill (block_.begin(), block_.end(), 0);
 			file_.Insert(newIndex, &*(block_.begin()));
-			IncreaseLocationReferences(vector<size_t>(1, newIndex));
+			IncreaseLocationReferences(std::vector<size_t>(1, newIndex));
 			properties_[0]->startBlock_ = newIndex;
 			properties_[0]->size_ = header_.bigBlockSize_;
 		}
 
 		// Get present indices
-		vector<size_t> indices;
+		std::vector<size_t> indices;
 		GetBlockIndices(startIndex, indices, false);
 		size_t maxPresentBlocks = indices.size();
 
@@ -1606,7 +1606,7 @@ size_t CompoundFile::WriteData(const char* data, size_t size, int startIndex, bo
 		size_t extraSize = size % header_.smallBlockSize_;
 		size_t maxNewBlocks = size / header_.smallBlockSize_ + (extraSize ? 1 : 0);
 
-		vector<char> smallBlocksData;
+		std::vector<char> smallBlocksData;
 		int extraBlocks = maxPresentBlocks - maxNewBlocks;
 		if (extraBlocks > 0)
 		{
@@ -1616,7 +1616,7 @@ size_t CompoundFile::WriteData(const char* data, size_t size, int startIndex, bo
 			else startIndex = -2;
 
 			// Get indices of blocks to delete
-			vector<size_t> indicesToRemove(extraBlocks);
+			std::vector<size_t> indicesToRemove(extraBlocks);
 			copy (indices.begin()+maxNewBlocks, indices.end(), indicesToRemove.begin());
 			indices.erase(indices.begin()+maxNewBlocks, indices.end());
 
@@ -1677,7 +1677,7 @@ size_t CompoundFile::WriteData(const char* data, size_t size, int startIndex, bo
 	}
 }
 
-void CompoundFile::GetBlockIndices(size_t startIndex, vector<size_t>& indices, bool isBig)
+void CompoundFile::GetBlockIndices(size_t startIndex, std::vector<size_t>& indices, bool isBig)
 // PURPOSE: Get the indices of blocks where data are stored, starting from startIndex.
 // EXPLAIN: isBig is true if property uses big blocks, false if it uses small blocks.
 {
@@ -1742,15 +1742,15 @@ void CompoundFile::ExpandBATArray(bool isBig)
 
 	if (isBig)
 	{
-		size_t BATindex = distance(&header_.BATArray_[0], 
-								   find(header_.BATArray_, 
+		size_t BATindex = std::distance(&header_.BATArray_[0],
+										std::find(header_.BATArray_,
 										header_.BATArray_+109, -1));
 		if (BATindex < 109)
 		{
 			// Set new BAT index location
 			newIndex = blocksIndices_.size(); // New index location
 			file_.Insert(newIndex+1, &*(block_.begin()));
-			IncreaseLocationReferences(vector<size_t>(1, newIndex));
+			IncreaseLocationReferences(std::vector<size_t>(1, newIndex));
 
 			// Update BAT array
 			header_.BATArray_[BATindex] = newIndex;
@@ -1764,13 +1764,13 @@ void CompoundFile::ExpandBATArray(bool isBig)
 			{
 				newIndex = header_.XBATStart_ + header_.XBATCount_;
 				file_.Insert(newIndex, &*(block_.begin()));
-				IncreaseLocationReferences(vector<size_t>(1, newIndex));
+				IncreaseLocationReferences(std::vector<size_t>(1, newIndex));
 			}
 			else
 			{
 				newIndex = blocksIndices_.size();
 				file_.Insert(newIndex, &*(block_.begin()));
-				IncreaseLocationReferences(vector<size_t>(1, newIndex));
+				IncreaseLocationReferences(std::vector<size_t>(1, newIndex));
 				header_.XBATStart_ = newIndex;
 			}
 			++header_.XBATCount_;
@@ -1785,13 +1785,13 @@ void CompoundFile::ExpandBATArray(bool isBig)
 		{
 			newIndex = header_.SBATStart_ + header_.SBATCount_;
 			file_.Insert(newIndex, &*(block_.begin()));
-			IncreaseLocationReferences(vector<size_t>(1, newIndex));
+			IncreaseLocationReferences(std::vector<size_t>(1, newIndex));
 		}
 		else
 		{
 			newIndex = GetFreeBlockIndex(true);
 			file_.Insert(newIndex, &*(block_.begin()));
-			IncreaseLocationReferences(vector<size_t>(1, newIndex));
+			IncreaseLocationReferences(std::vector<size_t>(1, newIndex));
 			header_.SBATStart_ = newIndex;
 		}
 		++header_.SBATCount_;
@@ -1807,7 +1807,7 @@ void CompoundFile::LinkBlocks(size_t from, size_t to, bool isBig)
 	else sblocksIndices_[from] = to;
 }
 
-void CompoundFile::FreeBlocks(vector<size_t>& indices, bool isBig)
+void CompoundFile::FreeBlocks(std::vector<size_t>& indices, bool isBig)
 // PURPOSE: Delete blocks of data from compound file.
 // EXPLAIN: indices contains indices to blocks of data to be deleted. 
 // EXPLAIN: isBig is true if property uses big blocks, false if it uses small blocks.
@@ -1821,7 +1821,7 @@ void CompoundFile::FreeBlocks(vector<size_t>& indices, bool isBig)
 		file_.Erase(indices);
 
 		// Shrink BAT indices if necessary
-		vector<size_t> indicesToRemove;
+		std::vector<size_t> indicesToRemove;
 		while (distance(find(blocksIndices_.begin(), 
 						     blocksIndices_.end(),-1),
 						     blocksIndices_.end()) >= 128)
@@ -1837,8 +1837,8 @@ void CompoundFile::FreeBlocks(vector<size_t>& indices, bool isBig)
 			else
 			{
 				// No XBAT, delete last occupied BAT array element
-				size_t BATindex = distance(&header_.BATArray_[0], 
-										   find(header_.BATArray_, 
+				size_t BATindex = std::distance(&header_.BATArray_[0],
+												std::find(header_.BATArray_,
 												header_.BATArray_+109, -1));
 				if (BATindex != 109)
 				{
@@ -1866,9 +1866,9 @@ void CompoundFile::FreeBlocks(vector<size_t>& indices, bool isBig)
 		{
 			if (find(indices.begin(), indices.end(), i) == indices.end()) 
 			{
-				copy (data+i*header_.smallBlockSize_, 
-					  data+i*header_.smallBlockSize_+header_.smallBlockSize_, 
-					  newdata+j*header_.smallBlockSize_);
+				std::copy (data+i*header_.smallBlockSize_,
+						   data+i*header_.smallBlockSize_+header_.smallBlockSize_, 
+						   newdata+j*header_.smallBlockSize_);
 				++j;
 			}
 		}}
@@ -1891,13 +1891,13 @@ void CompoundFile::FreeBlocks(vector<size_t>& indices, bool isBig)
 					sblocksIndices_[j] != -2) --sblocksIndices_[j];
 			}
 		}}
-		sort (indices.begin(), indices.end(), greater<size_t>());
+		sort (indices.begin(), indices.end(), std::greater<size_t>());
 		{for (size_t i=0; i<maxIndices; ++i)
 		{
 			sblocksIndices_.erase(sblocksIndices_.begin()+indices[i]);
 			sblocksIndices_.push_back(-1);
 		}}
-		vector<size_t> indicesToRemove;
+		std::vector<size_t> indicesToRemove;
 		while (distance(find(sblocksIndices_.begin(), 
 						     sblocksIndices_.end(),-1),
 						     sblocksIndices_.end()) >= 128)
@@ -2230,7 +2230,7 @@ void CompoundFile::UpdateChildrenIndices(CompoundFile::PropertyTree* parentTree)
 	size_t maxChildren = parentTree->children_.size();
 	if (maxChildren != 0)
 	{
-		vector<PropertyTree*>& children = parentTree->children_;
+		std::vector<PropertyTree*>& children = parentTree->children_;
 		size_t prevChild = 0;
 		children[0]->self_->previousProp_ = -1;
 		children[0]->self_->nextProp_ = -1;
@@ -2698,7 +2698,7 @@ size_t LargeString::ContinueRead(const char* data, size_t size)
 		else
 		{
 			// String to be read is in ANSI
-			vector<char> name(size);
+			std::vector<char> name(size);
 			LittleEndian::ReadString(data, &*(name.begin()), npos, size);
 			mbstowcs(&*(wname_.begin())+strpos, &*(name.begin()), size);
 			npos += size;
@@ -2719,7 +2719,7 @@ size_t LargeString::ContinueRead(const char* data, size_t size)
 		if (unicode & 1)
 		{
 			// String to be read is in unicode
-			vector<wchar_t> name(size);
+			std::vector<wchar_t> name(size);
 			LittleEndian::ReadString(data, &*(name.begin()), npos, size);
 			wcstombs(&*(name_.begin())+strpos, &*(name.begin()), size);
 			npos += size * SIZEOFWCHAR_T;
@@ -4530,7 +4530,7 @@ bool BasicExcel::Load(const char* filename)
 		workbook_ = Workbook();
 		worksheets_.clear();
 
-		vector<char> data;
+		std::vector<char> data;
 		file_.ReadFile("Workbook", data);
 		Read(&*(data.begin()), data.size());
 		UpdateYExcelWorksheet();
@@ -4558,7 +4558,7 @@ bool BasicExcel::Save()
 		}
 		
 		// Create new workbook.
-		vector<char> data(minBytes,0);
+		std::vector<char> data(minBytes,0);
 		Write(&*(data).begin());
 
 		if (file_.WriteFile("Workbook", data, data.size())!=CompoundFile::SUCCESS) return false;
@@ -5133,10 +5133,10 @@ void BasicExcel::UpdateWorksheets()
 	Worksheet::CellTable::RowBlock::CellBlock::MulRK::XFRK xfrk;
 	LargeString largeString;
 
-	map<vector<char>, size_t> stringMap;
-	map<vector<char>, size_t>::iterator stringMapIt;
-	map<vector<wchar_t>, size_t> wstringMap;
-	map<vector<wchar_t>, size_t>::iterator wstringMapIt;
+	std::map<std::vector<char>, size_t> stringMap;
+	std::map<std::vector<char>, size_t>::iterator stringMapIt;
+	std::map<std::vector<wchar_t>, size_t> wstringMap;
+	std::map<std::vector<wchar_t>, size_t>::iterator wstringMapIt;
 
 	// Reset worksheets and string table.
 	worksheets_.clear();
@@ -5165,8 +5165,8 @@ void BasicExcel::UpdateWorksheets()
 		if (s > 0) worksheets_[s].window2_.options_ &= ~0x200;
 
 		// References and pointers to shorten code
-		vector<Worksheet::CellTable::RowBlock>& rRowBlocks = worksheets_[s].cellTable_.rowBlocks_;
-		vector<Worksheet::CellTable::RowBlock::CellBlock>* pCellBlocks;
+		std::vector<Worksheet::CellTable::RowBlock>& rRowBlocks = worksheets_[s].cellTable_.rowBlocks_;
+		std::vector<Worksheet::CellTable::RowBlock::CellBlock>* pCellBlocks;
 		Worksheet::CellTable::RowBlock::CellBlock* pCell;
 		rRowBlocks.resize(maxRows/32 + (maxRows%32 ? 1 : 0));
 		pCellBlocks = 0;
@@ -5320,7 +5320,7 @@ void BasicExcel::UpdateWorksheets()
 							pCell->labelsst_.colIndex_ = c;
 							
 							// Get cell string
-							vector<char> str(cell->GetStringLength()+1);
+							std::vector<char> str(cell->GetStringLength()+1);
 							cell->Get(&*(str.begin()));
 							str.pop_back();	// Remove null character because LargeString does not store null character.
 
@@ -5359,7 +5359,7 @@ void BasicExcel::UpdateWorksheets()
 							pCell->labelsst_.colIndex_ = c;
 
 							// Get cell string
-							vector<wchar_t> str(cell->GetStringLength()+1);
+							std::vector<wchar_t> str(cell->GetStringLength()+1);
 							cell->Get(&*(str.begin()));
 							str.pop_back(); // Remove null character because LargeString does not store null character.
 
@@ -5498,7 +5498,7 @@ bool BasicExcelWorksheet::Rename(const wchar_t* to)
 
 ///< Print entire worksheet to an output stream, separating each column with the defined delimiter and enclosing text using the defined textQualifier.
 ///< Leave out the textQualifier argument if do not wish to have any text qualifiers.
-void BasicExcelWorksheet::Print(ostream& os, char delimiter, char textQualifier)
+void BasicExcelWorksheet::Print(std::ostream& os, char delimiter, char textQualifier)
 {
 	for (size_t r=0; r<maxRows_; ++r)
 	{
@@ -5515,7 +5515,7 @@ void BasicExcelWorksheet::Print(ostream& os, char delimiter, char textQualifier)
 					break;
 
 				case BasicExcelCell::DOUBLE:
-					os << setprecision(15) << cell->GetDouble();
+					os << std::setprecision(15) << cell->GetDouble();
 					break;
 
 				case BasicExcelCell::STRING:
@@ -5524,11 +5524,11 @@ void BasicExcelWorksheet::Print(ostream& os, char delimiter, char textQualifier)
 						{
 						// Get string.
 						size_t maxLength = cell->GetStringLength();
-						vector<char> cellString(maxLength+1);
+						std::vector<char> cellString(maxLength+1);
 						cell->Get(&*(cellString.begin()));
 
 						// Duplicate textQualifier if found in string.
-						vector<char>::iterator it;
+						std::vector<char>::iterator it;
 						size_t npos = 0;
 						while ((it=find(cellString.begin()+npos, cellString.end(), textQualifier)) != cellString.end())
 						{
@@ -5551,7 +5551,7 @@ void BasicExcelWorksheet::Print(ostream& os, char delimiter, char textQualifier)
 			}
 			if (c < maxCols_-1) os << delimiter;
 		}
-		os << endl;
+		os << std::endl;
 	}
 }
 
@@ -5586,7 +5586,7 @@ BasicExcelCell* BasicExcelWorksheet::Cell(size_t row, size_t col)
 	{
 		// Increase number of rows.
 		maxRows_ = row + 1;
-		cells_.resize(maxRows_, vector<BasicExcelCell>(maxCols_));
+		cells_.resize(maxRows_, std::vector<BasicExcelCell>(maxCols_));
 	}
 
 	return &(cells_[row][col]);
@@ -5609,22 +5609,22 @@ void BasicExcelWorksheet::UpdateCells()
 {
 	// Define some reference
 	Worksheet::Dimensions& dimension = excel_->worksheets_[sheetIndex_].dimensions_;
-	vector<Worksheet::CellTable::RowBlock>& rRowBlocks = excel_->worksheets_[sheetIndex_].cellTable_.rowBlocks_;
+	std::vector<Worksheet::CellTable::RowBlock>& rRowBlocks = excel_->worksheets_[sheetIndex_].cellTable_.rowBlocks_;
 
-	vector<wchar_t> wstr;
-	vector<char> str;
+	std::vector<wchar_t> wstr;
+	std::vector<char> str;
 
 	maxRows_ = dimension.lastUsedRowIndexPlusOne_;
 	maxCols_ = dimension.lastUsedColIndexPlusOne_;
 
 	// Resize the cells to the size of the worksheet
-	vector<BasicExcelCell> cellCol(maxCols_);
+	std::vector<BasicExcelCell> cellCol(maxCols_);
 	cells_.resize(maxRows_, cellCol);
 
 	size_t maxRowBlocks = rRowBlocks.size();
 	for (size_t i=0; i<maxRowBlocks; ++i)
 	{
-		vector<Worksheet::CellTable::RowBlock::CellBlock>& rCellBlocks = rRowBlocks[i].cellBlocks_;
+		std::vector<Worksheet::CellTable::RowBlock::CellBlock>& rCellBlocks = rRowBlocks[i].cellBlocks_;
 		size_t maxCells = rCellBlocks.size();
 		for (size_t j=0; j<maxCells; ++j)
 		{
@@ -5644,7 +5644,7 @@ void BasicExcelWorksheet::UpdateCells()
 					
 				case CODE::LABELSST:
 				{
-					vector<LargeString>& ss = excel_->workbook_.sst_.strings_;
+					std::vector<LargeString>& ss = excel_->workbook_.sst_.strings_;
 					if (ss[rCellBlocks[j].labelsst_.SSTRecordIndex_].unicode_ & 1)
 					{
 						wstr = ss[rCellBlocks[j].labelsst_.SSTRecordIndex_].wname_;
@@ -5806,7 +5806,7 @@ double BasicExcelCell::GetDouble() const
 // Returns 0 if cell does not contain an ANSI string.
 const char* BasicExcelCell::GetString() const
 {
-	vector<char> str(str_.size());
+	std::vector<char> str(str_.size());
 	if (!str.empty() && Get(&*(str.begin()))) return &*(str_.begin());
 	else return 0;
 }
@@ -5815,7 +5815,7 @@ const char* BasicExcelCell::GetString() const
 // Returns 0 if cell does not contain an Unicode string.
 const wchar_t* BasicExcelCell::GetWString() const
 {
-	vector<wchar_t> wstr(wstr_.size());
+	std::vector<wchar_t> wstr(wstr_.size());
 	if (!wstr.empty() && Get(&*(wstr.begin()))) return &*(wstr_.begin());
 	else return 0;
 }
@@ -5865,7 +5865,7 @@ void BasicExcelCell::SetString(const char* str)
 	if (length > 0)
 	{
 		type_ = STRING;
-		str_ = vector<char>(length+1);
+		str_ = std::vector<char>(length+1);
 		strcpy(&*(str_.begin()), str);
 		wstr_.clear();
 	}
@@ -5879,7 +5879,7 @@ void BasicExcelCell::SetWString(const wchar_t* str)
 	if (length > 0)
 	{
 		type_ = WSTRING;
-		wstr_ = vector<wchar_t>(length+1);
+		wstr_ = std::vector<wchar_t>(length+1);
 		wcscpy(&*(wstr_.begin()), str);
 		str_.clear();
 	}
@@ -5897,7 +5897,7 @@ void BasicExcelCell::EraseContents()
 
 ///< Print cell to output stream.
 ///< Print a null character if cell is undefined.
-ostream& operator<<(ostream& os, const BasicExcelCell& cell)
+std::ostream& operator<<(std::ostream& os, const BasicExcelCell& cell)
 {
 	switch (cell.Type())
 	{

@@ -1,0 +1,14 @@
+/build-*/
+/Tests/
+*/*.pro.user
+*/*/*.pro.user
+/**/CMakeLists.txt.user
+.gcc-flags.json
+.atom-build.yml
+.vscode/
+[Dd]ebug*/
+[Rr]elease*/
+RelWithDebInfo*/
+CMakeLists.txt.user*
+download/
+*/.vs/

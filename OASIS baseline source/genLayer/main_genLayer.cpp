@@ -33,17 +33,15 @@ which must be downloaded separately by the end user
 #include "errorChecks.h"
 #include "io_functions.h"
 
-using namespace std;
-
 //function to write output in svg format
 //takes as input the output filename fn, layer L and the user defined configuration file
-void rlayer2SVG(string fn, layer L, AMconfig configData)
+void rlayer2SVG(std::string fn, layer L, AMconfig configData)
 {
 	svg::Dimensions dimensions(configData.dim, configData.dim);
 	svg::Document docH(fn, svg::Layout(dimensions, svg::Layout::TopLeft));
 	double sx, sy, fx, fy;// co-ordinates of vertices of an edge
 	slice s = L.us;
-	vector<vertex> vList = L.vList;
+	std::vector<vertex> vList = L.vList;
 
 	//scaling factors so that svg fills the screen
 	double mag = configData.vMag;
@@ -52,9 +50,9 @@ void rlayer2SVG(string fn, layer L, AMconfig configData)
 	int numSec = (configData.vF).size();
 
 	//go through the layer structure and generate individual vectors to write to the svg file
-	for (vector<region>::iterator rt = (s.rList).begin(); rt != (s.rList).end(); ++rt)
+	for (std::vector<region>::iterator rt = (s.rList).begin(); rt != (s.rList).end(); ++rt)
 	{
-		for (vector<edge>::iterator et = ((*rt).eList).begin(); et != ((*rt).eList).end(); ++et)
+		for (std::vector<edge>::iterator et = ((*rt).eList).begin(); et != ((*rt).eList).end(); ++et)
 		{
 			sx = (vList[(*et).start_idx - 1]).x * mag + offx;
 			sy = (vList[(*et).start_idx - 1]).y * mag + offy;
@@ -104,14 +102,14 @@ int	main(int argc, char **argv)
 	// Determine where we are (current path)
 	TCHAR filePath[MAX_PATH + 1] = "";
 	GetCurrentDirectory(MAX_PATH, filePath);
-	string currentPath = &filePath[0];
+	std::string currentPath = &filePath[0];
 
 	// 1. Read the configuration file indicated by command-line arguments
 	AMconfig configData;
 	errorCheckStructure errorData;
 	// Parse the command-line arguments, if any.
 	// argc indicates the number of command-line arguments entered by the user
-	string configFilename = "";
+	std::string configFilename = "";
 	if (argc > 1)
 	{
 		configFilename = argv[1];
@@ -119,7 +117,7 @@ int	main(int argc, char **argv)
 	else
 	{
 		// no config file specified... most likely the user tried to run genLayer or genScan directly
-		string errMsg = "Please use createScanpaths.exe to handle layer and scan generation. genScan.exe and genLayer.exe are helper functions only\n";
+		std::string errMsg = "Please use createScanpaths.exe to handle layer and scan generation. genScan.exe and genLayer.exe are helper functions only\n";
 		system("pause");
 		return -1;
 	}
@@ -140,13 +138,13 @@ int	main(int argc, char **argv)
 	// requirements between calls, but fewer iterations will make it run faster. 
 	int close = 0;
 
-	vector<obj> vOBJ;	// vOBJ contains information about each stl file
-	vector<int> nLayer;	// number of layers in stl files
-	vector<int> soffset;// z offset for stl files
-	vector<double> vs;	// span of the stl files, needed to scale the svg display
+	std::vector<obj> vOBJ;	// vOBJ contains information about each stl file
+	std::vector<int> nLayer;	// number of layers in stl files
+	std::vector<int> soffset;// z offset for stl files
+	std::vector<double> vs;	// span of the stl files, needed to scale the svg display
 
 	//intermediate information to generate span
-	vector<double> vL, vR, vB, vT;  // will hold min/max x and y values for each part.
+	std::vector<double> vL, vR, vB, vT;  // will hold min/max x and y values for each part.
 									// vL=left (min x), vR=right (max x), vB=bottom (min y), vT=top (max y)
 
 	// 3. Iterate through the list of STL part files and run Slic3r on any which haven't been sliced
@@ -154,10 +152,10 @@ int	main(int argc, char **argv)
 	// desired planes and determine the span and total number of layers for each stl file
 	// We save info from previously-sliced parts in vv_array and layersPerFile to avoid re-slicing identical parts
 	//
-	vector<vertex> vv;	// Bounding box data for a specific part
+	std::vector<vertex> vv;	// Bounding box data for a specific part
 		// vv[0] is min x,y,z across entire part, vv[1].x = min x, vv[2].x = max x, vv[3].y = min y, vv[4].y = max y
-	vector<vector<vertex>> vv_array;  // bounding box info for each part
-	vector<int> layersPerFile;  // number of layers per STL file - not including z offset
+	std::vector<std::vector<vertex>> vv_array;  // bounding box info for each part
+	std::vector<int> layersPerFile;  // number of layers per STL file - not including z offset
 	obj o;
 	bool fileExists;	// whether this stl file is found in working directory
 	//
@@ -186,7 +184,7 @@ int	main(int argc, char **argv)
 			DWORD ftyp = GetFileAttributesA((configData.vF[i]).fn.c_str());
 			if (ftyp == INVALID_FILE_ATTRIBUTES) {
 				fileExists = false;  // STL file cannot be found
-				string errMsg = "The STL file named " + configData.vF[i].fn + " cannot be found in the same folder as the configuration file\n";
+				std::string errMsg = "The STL file named " + configData.vF[i].fn + " cannot be found in the same folder as the configuration file\n";
 				updateErrorResults(errorData, true, "genLayer main", errMsg, "", configData.configFilename, configData.configPath);
 				return -1;
 			}
@@ -223,7 +221,7 @@ int	main(int argc, char **argv)
 			int slicerReturnValue = runSlic3r((configData.vF[i]).fn, configData.layerThickness_mm, configData.executableFolder);
 			if (slicerReturnValue != 0) {
 				// slic3r encountered an issue with an STL file
-				string errMsg = "Slic3r was not able to slice " + configData.vF[i].fn + "\n";
+				std::string errMsg = "Slic3r was not able to slice " + configData.vF[i].fn + "\n";
 				updateErrorResults(errorData, true, "SliceFuns", errMsg, "", configData.configFilename, configData.configPath);
 				return -1;
 			}
@@ -234,7 +232,7 @@ int	main(int argc, char **argv)
 		// save information about this part:  filename without extension, z offset in layers, total layer count
 		o.cntOffset = (int)(((configData.vF[i]).z_offset) / configData.layerThickness_mm);
 		soffset.push_back(o.cntOffset);
-		string sfn = o.fn + ".svg";
+		std::string sfn = o.fn + ".svg";
 		o.totLayer = (getNumLayer(sfn) + o.cntOffset);
 		vOBJ.push_back(o);
 		nLayer.push_back(o.totLayer);
@@ -280,17 +278,17 @@ int	main(int argc, char **argv)
 	configData.vMag = mag;
 	configData.vOffx = xo;
 	configData.vOffy = yo;
-	ofstream fout;
+	std::ofstream fout;
 	fout.open(configData.layerOutputFolder + "\\" + "vConfig.txt");
-	fout << mag << "," << xo << "," << yo << endl;
+	fout << mag << "," << xo << "," << yo << std::endl;
 	fout.close();
 
-	if (started == 0) { cout << "Total number of layers: " << totLayer << "\n\n"; }
+	if (started == 0) { std::cout << "Total number of layers: " << totLayer << "\n\n"; }
 
-	vector<layer> vLayer;// layer from all stl files
+	std::vector<layer> vLayer;// layer from all stl files
 	layer L;  // temporary layer var
 	layer Lc; // combined layer with appropriate tags
-	vector<Linfo> Lhdr; // information to be written in the header file
+	std::vector<Linfo> Lhdr; // information to be written in the header file
 
 	// set up variables for cursor control
 	COORD cursorPosition;
@@ -304,7 +302,7 @@ int	main(int argc, char **argv)
 	// By generating combined layer structure with appropriate tags and write them to XML and SVG formats
 	for (int i = sLayer; i <= fLayer; i++)
 	{
-		cout << "Processing layer " << i << " of " << totLayer;
+		std::cout << "Processing layer " << i << " of " << totLayer;
 		// reset cursor position for next iteration
 		SetConsoleCursorPosition(hStdout, cursorPosition);
 
@@ -361,8 +359,8 @@ int	main(int argc, char **argv)
 		Lc.thickness = configData.layerThickness_mm;
 
 		// generate filenames by appending appropriate numbers
-		string zs;
-		for (int k = 0; k < (int)(to_string(totLayer)).size() - (int)(to_string(i)).size(); k++)
+		std::string zs;
+		for (int k = 0; k < (int)(std::to_string(totLayer)).size() - (int)(std::to_string(i)).size(); k++)
 		{
 			zs = zs + "0";
 		};
@@ -370,14 +368,14 @@ int	main(int argc, char **argv)
 		// 6d. Optionally, generate an SVG visualization file displaying just this layer
 		if ( (configData.createLayerSVG == 1) && ((i % configData.layerSVGinterval == 0) | (i==1)) ) {
 			//generate SVG file then move to SVG subfolder
-			string nfn = "layer_" + zs + to_string(i) + ".svg";
-			string fullSVGpath = configData.layerOutputFolder + "\\SVGdir\\" + nfn;
+			std::string nfn = "layer_" + zs + std::to_string(i) + ".svg";
+			std::string fullSVGpath = configData.layerOutputFolder + "\\SVGdir\\" + nfn;
 			rlayer2SVG(fullSVGpath, Lc, configData);
 		}
 
 		// 6e. Generate an XML layer file from the layer structure, using the Microsoft DOM
-		string xfn = "layer_" + zs + to_string(i) + ".xml";
-		string fullXMLpath = configData.layerOutputFolder + "\\XMLdir\\" + xfn;
+		std::string xfn = "layer_" + zs + std::to_string(i) + ".xml";
+		std::string fullXMLpath = configData.layerOutputFolder + "\\XMLdir\\" + xfn;
 		HRESULT hr = CoInitialize(NULL);
 		if (SUCCEEDED(hr))
 		{
@@ -391,7 +389,7 @@ int	main(int argc, char **argv)
 	} // end for (int i = sLayer; i <= fLayer; i++)
 
 	// 7. Target number of layers are complete for this instance of genLayer.  Create a single XML file containing header information from the DOM
-	string hfn = "\"" + configData.layerOutputFolder + "\\XMLdir\\layer_header.xml\"";
+	std::string hfn = "\"" + configData.layerOutputFolder + "\\XMLdir\\layer_header.xml\"";
 	HRESULT hr = CoInitialize(NULL);
 
 	if (SUCCEEDED(hr))
@@ -401,12 +399,12 @@ int	main(int argc, char **argv)
 	}
 
 	// 8. Write ending layer number and whether all are completed to gl_sts.cfg file for communication with createScanpaths
-	ofstream stfile;
+	std::ofstream stfile;
 	stfile.open("gl_sts.cfg");
-	stfile << 1 << endl;	// set started to 1, which will avoid re-slicing parts
-	stfile << fLayer << endl;
-	stfile << finished << endl;
-	stfile << configData.layerOutputFolder << endl;
+	stfile << 1 << std::endl;	// set started to 1, which will avoid re-slicing parts
+	stfile << fLayer << std::endl;
+	stfile << finished << std::endl;
+	stfile << configData.layerOutputFolder << std::endl;
 	stfile.close();
 
 	return 0;

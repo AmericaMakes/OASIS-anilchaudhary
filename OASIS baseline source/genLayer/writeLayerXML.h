@@ -41,8 +41,6 @@ layer structure to an xml file.
 
 extern IXMLDOMDocument *pXMLDomLayer;
 
-using namespace std;
-
 // Helper that allocates the BSTR param for the caller.
 HRESULT CreateElement(IXMLDOMDocument *pXMLDom, PCWSTR wszName, IXMLDOMElement **ppElement);
 
@@ -76,10 +74,10 @@ HRESULT CreateAndInitDOM(IXMLDOMDocument **ppDoc);
 
 
 // function that writes the layer structure L to the xml file fn
-void writeLayer(string fn, layer L);
+void writeLayer(std::string fn, layer L);
 
 //function that writes the header structure Lhdr to xml file fn
-void writeHeader(string fn, vector<Linfo> Lhdr, int numLayer);
+void writeHeader(std::string fn, std::vector<Linfo> Lhdr, int numLayer);
 
 //helper function to convert double to PCWSTR
 LPCWSTR d2lp(double in);
@@ -88,10 +86,10 @@ LPCWSTR d2lp(double in);
 LPCWSTR i2lp(int in);
 
 //helper function to convert string to PCWSTR
-PCWSTR s2lp(string in);
+PCWSTR s2lp(std::string in);
 
 //helper function to convert double to a string
-string d2s(double d);
+std::string d2s(double d);
 
 
 #endif

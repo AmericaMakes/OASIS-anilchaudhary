@@ -63,10 +63,10 @@ int b2i(BSTR in)
 	return out;
 }
 
-string b2s(BSTR in)
+std::string b2s(BSTR in)
 {
 	_bstr_t b_in(in);
-	string out = string((char*)b_in);
+	std::string out = std::string((char*)b_in);
 	return out;
 }
 
@@ -112,9 +112,9 @@ layer traverseDOM()
 {	// Parses values in the Domain Object Model into a layer structure
 	layer L;
 	slice s;
-	vector<region> rList;
-	vector<vertex> vertexList;
-	vector<edge> eList;
+	std::vector<region> rList;
+	std::vector<vertex> vertexList;
+	std::vector<edge> eList;
 	L.thickness = 0.0;  // initialize a value
 
 	HRESULT hr = S_OK;
@@ -321,12 +321,12 @@ CleanUp:
 	return L;
 }
 
-int verifyLayerStructure(AMconfig &configData, string layerFilename, layer lyr, vector<string> tagList)
+int verifyLayerStructure(AMconfig &configData, std::string layerFilename, layer lyr, std::vector<std::string> tagList)
 {	// Evaluates key values within the layer structure read from XML against region-tags and other expectations
 	// We aggregate all errors and only halt at the end if an error was encountered
 	// Currently we only check region metadata; we don't verify that all the vertices are real-valued or are properly closed
 	errorCheckStructure errorData;
-	string errorMsg;
+	std::string errorMsg;
 	bool errFound = false;
 
 	// check layer thickness
@@ -340,7 +340,7 @@ int verifyLayerStructure(AMconfig &configData, string layerFilename, layer lyr, 
 	for (int r = 0; r < lyr.s.rList.size(); r++) {
 
 		// is region tag in config file region profile list?
-		std::vector<string>::iterator it;
+		std::vector<std::string>::iterator it;
 		it = std::find(tagList.begin(), tagList.end(), lyr.s.rList[r].tag);
 		if (it == tagList.end()) {
 			// region tag not found in config file list
@@ -350,7 +350,7 @@ int verifyLayerStructure(AMconfig &configData, string layerFilename, layer lyr, 
 		}
 
 		// is the region type Inner or Outer?
-		string rType = lyr.s.rList[r].type;
+		std::string rType = lyr.s.rList[r].type;
 		std::transform(rType.begin(), rType.end(), rType.begin(),
 			[](unsigned char c) { return std::tolower(c); });  // convert region type to lower case
 		if (!((rType == "inner") | (rType == "outer")))
@@ -362,12 +362,12 @@ int verifyLayerStructure(AMconfig &configData, string layerFilename, layer lyr, 
 
 		// are the contour & hatch trajectory#'s integers?
 		if (lyr.s.rList[r].contourTraj < 0) {
-			errorMsg = layerFilename + " contains a contour trajectory number which is less than zero:  " + to_string(lyr.s.rList[r].contourTraj);
+			errorMsg = layerFilename + " contains a contour trajectory number which is less than zero:  " + std::to_string(lyr.s.rList[r].contourTraj);
 			errFound = true;
 			updateErrorResults(errorData, false, "verifyLayerStructure", errorMsg, "", configData.configFilename, configData.configPath);
 		}
 		if (lyr.s.rList[r].hatchTraj < 0) {
-			errorMsg = layerFilename + " contains a hatch trajectory number which is less than zero:  " + to_string(lyr.s.rList[r].hatchTraj);
+			errorMsg = layerFilename + " contains a hatch trajectory number which is less than zero:  " + std::to_string(lyr.s.rList[r].hatchTraj);
 			errFound = true;
 			updateErrorResults(errorData, false, "verifyLayerStructure", errorMsg, "", configData.configFilename, configData.configPath);
 		}

@@ -20,7 +20,7 @@ layers of the resulting SVG file to identify vertices and edges
 
 #include "SliceFuns.h"
 
-int runSlic3r(string fn, double layerThickness_mm, string executableFolder)
+int runSlic3r(std::string fn, double layerThickness_mm, std::string executableFolder)
 {   
 	// executableFolder is the directory in which generateScanpaths.exe appears.  Slic3r should be in a slic3r_130 folder below that
 	// fn is the stl filename including full path and .stl extension
@@ -33,19 +33,19 @@ int runSlic3r(string fn, double layerThickness_mm, string executableFolder)
 	//		however we needed to choose the resolution to balance accuracy and error.  5um (0.005mm) seems to work well
 	
 	// create a Slic3r command that includes filename, SVG slice & export, layer height and other options
-	string command = "slic3r_130\\slic3r.exe \"" + fn + "\" --export-svg --no-gui --layer-height ";		// slic3r call plus filename
-	command += to_string(layerThickness_mm) + " --first-layer-height " + to_string(layerThickness_mm);	// options
+	std::string command = "slic3r_130\\slic3r.exe \"" + fn + "\" --export-svg --no-gui --layer-height ";		// slic3r call plus filename
+	command += std::to_string(layerThickness_mm) + " --first-layer-height " + std::to_string(layerThickness_mm);	// options
 	command += " --resolution 0.005";	// additional options (added 2020-07-21)
-	cout << "Slicing " << fn << "... ";
+	std::cout << "Slicing " << fn << "... ";
 	// system call.  slic3r always returns 0 even when there's an error, so we don't evaluate the return value
 	system(command.c_str());
-	cout << "Done\n";
+	std::cout << "Done\n";
 
 	// check whether the SVG file was actually created
 	int outputFlag = -1;  // return value where 0 = valid svg file
 	// Generate the expected svg filename by replacing .stl with .svg
 	int len = strlen(fn.c_str());
-	string svg_fn = fn.substr(0, len - 4) + ".svg";
+	std::string svg_fn = fn.substr(0, len - 4) + ".svg";
 	// evaluate attributes of this file
 	DWORD ftyp = GetFileAttributesA(svg_fn.c_str());
 	if (ftyp == INVALID_FILE_ATTRIBUTES) {
@@ -60,19 +60,19 @@ int runSlic3r(string fn, double layerThickness_mm, string executableFolder)
 }
 
 
-int readFile(string fn, long numLayer, layer* L, string rTag, string cSys, int cTraj, int hTraj)
+int readFile(std::string fn, long numLayer, layer* L, std::string rTag, std::string cSys, int cTraj, int hTraj)
 {
 	size_t			pos = 0;
-	string			line, sub;
+	std::string			line, sub;
 	long ctLayer = 0;
 	int bRead = 0;
 	int				currentLayer = 0, kk = 0;
 	int				Labelval[100] = { -1 };
 	double			Units = 0.0;
 	long			Layer = 0, Power = 0, Speed = 0, Focus = 0;//for iterating data per layer
-	ifstream		file(fn);
+	std::ifstream		file(fn);
 	
-	vector<loop> lp;
+	std::vector<loop> lp;
 	slice sl;
 	int eof = 1;
 	int clayer = 0;
@@ -80,11 +80,11 @@ int readFile(string fn, long numLayer, layer* L, string rTag, string cSys, int c
 	while (getline(file, line)) 
 	{
 		
-		if (string::npos != line.find("<g"))
+		if (std::string::npos != line.find("<g"))
 		{		
 			pos = line.find('id=');  // does not work if line.find("id=")
 			line = line.substr(pos + 1);
-			istringstream	ss;
+			std::istringstream	ss;
 			ss.str(line);
 			getline(ss, sub, ' ');			
 			int len = strlen(sub.c_str());			
@@ -105,21 +105,21 @@ int readFile(string fn, long numLayer, layer* L, string rTag, string cSys, int c
 			}					
 		}
 
-		if (string::npos != line.find("<polygon"))
+		if (std::string::npos != line.find("<polygon"))
 		{
 			if (clayer == 1)
 			{
 				pos = line.find('slic');
 				line = line.substr(pos + 1);
-				istringstream ss;
+				std::istringstream ss;
 				ss.str(line);
 				getline(ss, sub, ' ');
 				int len = strlen(sub.c_str());					
-				string looptype = (sub.substr(9, len - 10));
+				std::string looptype = (sub.substr(9, len - 10));
 				if (!looptype.compare("contour"))
 				{					
-					string vlist = getVlist(ss.str(),1);
-					vector<vertex> vl;
+					std::string vlist = getVlist(ss.str(),1);
+					std::vector<vertex> vl;
 					getVertices(vlist, vl, cSys);
 					loop r;
 					r.type = "Outer";
@@ -131,8 +131,8 @@ int readFile(string fn, long numLayer, layer* L, string rTag, string cSys, int c
 				}
 				else if (!looptype.compare("hole"))
 				{
-					string vlist = getVlist(ss.str(),2);
-					vector<vertex> vl;
+					std::string vlist = getVlist(ss.str(),2);
+					std::vector<vertex> vl;
 					getVertices(vlist, vl, cSys);
 					loop r;
 					r.type = "Inner";
@@ -144,7 +144,7 @@ int readFile(string fn, long numLayer, layer* L, string rTag, string cSys, int c
 				}
 			}
 		}
-		if (string::npos != line.find("</g>"))
+		if (std::string::npos != line.find("</g>"))
 		{
 			
 			if (clayer == 1)
@@ -159,9 +159,9 @@ int readFile(string fn, long numLayer, layer* L, string rTag, string cSys, int c
 }
 
 
-string getVlist(string s, int type)
+std::string getVlist(std::string s, int type)
 {
-	string vlist = s;
+	std::string vlist = s;
 	int diff = 49;  // set a default value
 	size_t vpos = 0;
 	vpos = vlist.find("points=");
@@ -174,29 +174,29 @@ string getVlist(string s, int type)
 	return vlist;
 }
 
-void getVertices(string vs, vector<vertex>& vl, string cSys)
+void getVertices(std::string vs, std::vector<vertex>& vl, std::string cSys)
 {
 	vertex v;
-	istringstream vss;
+	std::istringstream vss;
 	size_t vpos = 0;
 	vss.str(vs);
-	string sub;
+	std::string sub;
 	int eol = 0;
 	while (!eol)
 	{
 		getline(vss, sub, ' ');
 		// detect end of line
-		string ec = sub.substr(strlen(sub.c_str()) - 1, 1);
+		std::string ec = sub.substr(strlen(sub.c_str()) - 1, 1);
 		if (!ec.compare("\""))
 		{
 			eol = 1;
 		}
 		//separate coordinates
-		stringstream vsp;
+		std::stringstream vsp;
 		vsp.str(sub);
-		string sx;
+		std::string sx;
 		getline(vsp, sx, ',');
-		string sy;
+		std::string sy;
 		getline(vsp, sy, ' ');
 		if (eol)
 			sy = sy.substr(0, strlen(sy.c_str()) - 1);
@@ -210,26 +210,26 @@ void getVertices(string vs, vector<vertex>& vl, string cSys)
 
 void displayLayer(layer L)
 {
-	cout << "Z Height: " << L.zHeight << endl;
+	std::cout << "Z Height: " << L.zHeight << std::endl;
 	slice s = L.us;
-	cout << "Number of Loops : " << (s.lpList).size() << endl;
-	for (vector<loop>::iterator lt = (s.lpList).begin(); lt != (s.lpList).end(); ++lt)
+	std::cout << "Number of Loops : " << (s.lpList).size() << std::endl;
+	for (std::vector<loop>::iterator lt = (s.lpList).begin(); lt != (s.lpList).end(); ++lt)
 	{
-		cout << "Loop Type:  " << (*lt).type << endl;
-		cout << "No. of vertices: " << ((*lt).vList).size() << endl;
+		std::cout << "Loop Type:  " << (*lt).type << std::endl;
+		std::cout << "No. of vertices: " << ((*lt).vList).size() << std::endl;
 	}		
 }
 
 void refineLayer(layer *L)
 {
 	slice s = L->us;	// extract the upper slice bounding layer L
-	vector<vertex> vList;	// vList initially has no contents
-	vector<edge> eList;
+	std::vector<vertex> vList;	// vList initially has no contents
+	std::vector<edge> eList;
 	edge e;
 	int idx;
 	vertex sv, fv;
 	int cnt = 0;
-	for (vector<loop>::iterator lt = (s.lpList).begin(); lt != (s.lpList).end(); ++lt)	// iterate across loops in the upper slice s
+	for (std::vector<loop>::iterator lt = (s.lpList).begin(); lt != (s.lpList).end(); ++lt)	// iterate across loops in the upper slice s
 	{
 		eList.clear();	
 		region r;
@@ -244,7 +244,7 @@ void refineLayer(layer *L)
 			idx_s = e.start_idx;
 		}	
 		
-		for (vector<vertex>::iterator vt = ((*lt).vList).begin()+1; vt != ((*lt).vList).end(); ++vt)
+		for (std::vector<vertex>::iterator vt = ((*lt).vList).begin()+1; vt != ((*lt).vList).end(); ++vt)
 		{			
 			fv = *vt;
 			idx = findVertex(vList, fv);
@@ -283,9 +283,9 @@ int cmpVertex(vertex v1, vertex v2)
 	return match;
 }
 
-int findVertex(vector<vertex> vList, vertex v)
+int findVertex(std::vector<vertex> vList, vertex v)
 {
-	for (vector<vertex>::iterator vt = vList.begin(); vt != vList.end(); ++vt)
+	for (std::vector<vertex>::iterator vt = vList.begin(); vt != vList.end(); ++vt)
 	{
 		if (vt->x == v.x)
 		{
@@ -314,40 +314,40 @@ int findVertex(vector<vertex> vList, vertex v)
 void displayFLayer(layer L)
 {
 
-	cout << "Z Height: " << L.zHeight << endl;
+	std::cout << "Z Height: " << L.zHeight << std::endl;
 	slice s = L.us;
-	cout << "===================VertexList=====================" << endl;
-	for (vector<vertex>::iterator vt = (L.vList).begin(); vt != (L.vList).end(); ++vt)
+	std::cout << "===================VertexList=====================" << std::endl;
+	for (std::vector<vertex>::iterator vt = (L.vList).begin(); vt != (L.vList).end(); ++vt)
 	{
-		cout << (*vt).x << "," << (*vt).y << endl;
+		std::cout << (*vt).x << "," << (*vt).y << std::endl;
 	}
-	cout << "===================Slice=====================" << endl;
-	cout << "Number of Regions: " << (s.rList).size() << endl;
-	for (vector<region>::iterator rt = (s.rList).begin(); rt != (s.rList).end(); ++rt)
+	std::cout << "===================Slice=====================" << std::endl;
+	std::cout << "Number of Regions: " << (s.rList).size() << std::endl;
+	for (std::vector<region>::iterator rt = (s.rList).begin(); rt != (s.rList).end(); ++rt)
 	{
-		cout << "Region Type:  " << (*rt).type << endl;
-		for (vector<edge>::iterator et = ((*rt).eList).begin(); et != ((*rt).eList).end(); ++et)
+		std::cout << "Region Type:  " << (*rt).type << std::endl;
+		for (std::vector<edge>::iterator et = ((*rt).eList).begin(); et != ((*rt).eList).end(); ++et)
 		{
-			cout << (*et).start_idx << "," << (*et).end_idx << endl;
+			std::cout << (*et).start_idx << "," << (*et).end_idx << std::endl;
 		}
-		cout << "=============================================" << endl;
+		std::cout << "=============================================" << std::endl;
 	}
 }
 
-int getNumLayer(string fn)
+int getNumLayer(std::string fn)
 {
 	size_t			pos = 0;
-	string			line, sub;	
-	ifstream		file(fn);
+	std::string			line, sub;
+	std::ifstream		file(fn);
 	int nlayer = 0;
 	while (getline(file, line))
 	{
 
-		if (string::npos != line.find("<g"))
+		if (std::string::npos != line.find("<g"))
 		{
 			pos = line.find('id=');  // does not work if line.find("id=")
 			line = line.substr(pos + 1);
-			istringstream	ss;
+			std::istringstream	ss;
 			ss.str(line);
 			getline(ss, sub, ' ');
 			int len = strlen(sub.c_str());
@@ -357,11 +357,11 @@ int getNumLayer(string fn)
 	return nlayer;
 }
 
-layer combLayer(vector<layer> vL)
+layer combLayer(std::vector<layer> vL)
 {
 	layer L;
 	int firstLayer = 1;
-	for (vector<layer>::iterator lt = vL.begin(); lt != vL.end(); ++lt)
+	for (std::vector<layer>::iterator lt = vL.begin(); lt != vL.end(); ++lt)
 	{
 		if (!(*lt).isEmpty)
 		{
@@ -388,10 +388,10 @@ void scaleLayer(layer *L, double mag, double xo, double yo)
 {
 	slice s = L->us;	
 	vertex v;	
-	for (vector<loop>::iterator lt = (s.lpList).begin(); lt != (s.lpList).end(); ++lt)
+	for (std::vector<loop>::iterator lt = (s.lpList).begin(); lt != (s.lpList).end(); ++lt)
 	{
 
-		for (vector<vertex>::iterator vt = ((*lt).vList).begin(); vt != ((*lt).vList).end(); ++vt)
+		for (std::vector<vertex>::iterator vt = ((*lt).vList).begin(); vt != ((*lt).vList).end(); ++vt)
 		{
 			v.x = (*vt).x*mag + xo*mag;
 			v.y = (*vt).y*mag + yo*mag;
@@ -401,22 +401,22 @@ void scaleLayer(layer *L, double mag, double xo, double yo)
 	L->us = s;
 }
 
-vertex findOffset(string fn)
+vertex findOffset(std::string fn)
 {
 	vertex vMin, vTmp;
 
 	//get first vertex and assign it to vMax and vMin;
 	size_t			pos = 0;
-	string			line, sub;
-	ifstream		file(fn);
+	std::string			line, sub;
+	std::ifstream		file(fn);
 	int isFirst = 1;
 	while (getline(file, line))
 	{
-		if (string::npos != line.find("vertex"))
+		if (std::string::npos != line.find("vertex"))
 		{
 			pos = line.find("vertex");
 			line = line.substr(pos + 7);
-			istringstream	ss;
+			std::istringstream	ss;
 			ss.str(line);
 			getline(ss, sub, ' ');
 			getline(ss, sub, ' ');
@@ -445,13 +445,13 @@ vertex findOffset(string fn)
 	return vMin;
 }
 
-int ckFile(string fn)
+int ckFile(std::string fn)
 {
 	int length;
-	ifstream is(fn.c_str(), ios::in | ios::binary);
-	is.seekg(0, ios::end);
+	std::ifstream is(fn.c_str(), std::ios::in | std::ios::binary);
+	is.seekg(0, std::ios::end);
 	length = is.tellg();	
-	is.seekg(0, ios::beg);
+	is.seekg(0, std::ios::beg);
 	char header[80];
 	char nTrig[4];
 	is.read(header, 80);
@@ -473,14 +473,14 @@ int ckFile(string fn)
 
 }
 
-vector<vertex> findBoundary(string fn)
+std::vector<vertex> findBoundary(std::string fn)
 {
-	vector<vertex> vv;
+	std::vector<vertex> vv;
 	int isBinary = ckFile(fn);
 	if (isBinary)
 	{
 		// Binary STL format
-		ifstream is(fn.c_str(), ios::in | ios::binary);
+		std::ifstream is(fn.c_str(), std::ios::in | std::ios::binary);
 		char header[80];
 		char nTrig[4];
 		char facet[50];
@@ -547,22 +547,22 @@ vector<vertex> findBoundary(string fn)
 		vertex vMin, vTmp, vL, vR, vT, vB;
 		//get first vertex and assign it to vMax and vMin;
 		size_t			pos = 0;
-		string			line, sub;
-		ifstream		file(fn);
+		std::string			line, sub;
+		std::ifstream		file(fn);
 		int isFirst = 1;
 		while (getline(file, line))
 		{
 			//cout << "line= " << (string)line << endl;
-			if (string::npos != line.find("vertex"))
+			if (std::string::npos != line.find("vertex"))
 			{
 				pos = line.find("vertex");
 				line = line.substr(pos + 7);
 				//cout << "line after vertex= " << (string)line << endl;
-				istringstream ss;
+				std::istringstream ss;
 				ss.str(line);
-				vector<string> tokens;
-				copy(istream_iterator<string>(ss),
-					istream_iterator<string>(),
+				std::vector<std::string> tokens;
+				copy(std::istream_iterator<std::string>(ss),
+					std::istream_iterator<std::string>(),
 					back_inserter(tokens));
 				vTmp.x = atof(tokens[0].c_str());
 				vTmp.y = atof(tokens[1].c_str());
@@ -606,7 +606,7 @@ vector<vertex> findBoundary(string fn)
 	return vv;
 }
 
-void includeStripesInBBox(AMconfig &configData, vector<double> &vL, vector<double> &vR, vector<double> &vB, vector<double> &vT)
+void includeStripesInBBox(AMconfig &configData, std::vector<double> &vL, std::vector<double> &vR, std::vector<double> &vB, std::vector<double> &vT)
 {
 	// Iterate over configData.stripeList to find min/max x and y coordinates
 	if (configData.stripeList.size() > 0)

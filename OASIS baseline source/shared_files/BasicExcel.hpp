@@ -59,7 +59,6 @@
 #include <fstream>
 #include <map>
 #include <vector>
-using namespace std;
 
 #define UTF16
 #ifdef UTF16
@@ -78,7 +77,7 @@ public:
 
 // File handling functions
 	bool Create(const wchar_t* filename);
-	bool Open(const wchar_t* filename, ios_base::openmode mode=ios_base::in | ios_base::out);
+	bool Open(const wchar_t* filename, std::ios_base::openmode mode=std::ios_base::in | std::ios_base::out);
 	bool Close();
 	bool IsOpen();
 
@@ -89,7 +88,7 @@ public:
 	bool Move(size_t from, size_t to);
 	bool Insert(size_t index, const char* block);
 	bool Erase(size_t index);
-	bool Erase(vector<size_t>& indices);
+	bool Erase(std::vector<size_t>& indices);
 
 // Misc functions
 	size_t GetBlockSize() const {return blockSize_;}
@@ -100,9 +99,9 @@ public:
 	}
 	
 protected:
-	vector<char> filename_;
-	ios_base::openmode mode_;
-	fstream file_;
+	std::vector<char> filename_;
+	std::ios_base::openmode mode_;
+	std::fstream file_;
 	size_t blockSize_;
 	size_t indexEnd_;
 	size_t fileSize_;
@@ -145,7 +144,7 @@ struct LittleEndian
 	}
 
 	template<typename Type>
-	static void Read(const vector<char>& buffer, Type& retVal, int pos=0, int bytes=0)
+	static void Read(const std::vector<char>& buffer, Type& retVal, int pos=0, int bytes=0)
 	{
 		retVal = Type(0);
 		if (bytes == 0) bytes = sizeof(Type);
@@ -156,13 +155,13 @@ struct LittleEndian
 	}
 
 	template<typename Type>
-	static void ReadString(const vector<char>& buffer, Type* str, int pos=0, int bytes=0)
+	static void ReadString(const std::vector<char>& buffer, Type* str, int pos=0, int bytes=0)
 	{
 		for (size_t i=0; i<bytes; ++i) Read(buffer, str[i], pos+i*sizeof(Type));
 	}
 
 	template<typename Type>
-	static void Write(vector<char>& buffer, Type val, int pos=0, int bytes=0)
+	static void Write(std::vector<char>& buffer, Type val, int pos=0, int bytes=0)
 	{
 		if (bytes == 0) bytes = sizeof(Type);
 		for (size_t i=0; i<bytes; ++i)
@@ -173,7 +172,7 @@ struct LittleEndian
 	}
 
 	template<typename Type>
-	static void WriteString(vector<char>& buffer, Type* str, int pos=0, int bytes=0)
+	static void WriteString(std::vector<char>& buffer, Type* str, int pos=0, int bytes=0)
 	{
 		for (size_t i=0; i<bytes; ++i) Write(buffer, str[i], pos+i*sizeof(Type));
 	}
@@ -209,7 +208,7 @@ struct LittleEndian
 		for (int i=0; i<bytes; ++i) Write(buffer, str[i], pos+i*SIZEOFWCHAR_T);
 	}
 
-	static void Read(const vector<char>& buffer, wchar_t& retVal, int pos=0, int bytes=0)
+	static void Read(const std::vector<char>& buffer, wchar_t& retVal, int pos=0, int bytes=0)
 	{
 		retVal = wchar_t(0);
 		if (bytes == 0) bytes = SIZEOFWCHAR_T;
@@ -219,12 +218,12 @@ struct LittleEndian
 		}
 	}
 
-	static void ReadString(const vector<char>& buffer, wchar_t* str, int pos=0, int bytes=0)
+	static void ReadString(const std::vector<char>& buffer, wchar_t* str, int pos=0, int bytes=0)
 	{
 		for (int i=0; i<bytes; ++i) Read(buffer, str[i], pos+i*SIZEOFWCHAR_T);
 	}
 
-	static void Write(vector<char>& buffer, wchar_t val, int pos=0, int bytes=0)
+	static void Write(std::vector<char>& buffer, wchar_t val, int pos=0, int bytes=0)
 	{
 		if (bytes == 0) bytes = SIZEOFWCHAR_T;
 		for (int i=0; i<bytes; ++i)
@@ -234,7 +233,7 @@ struct LittleEndian
 		}
 	}
 
-	static void WriteString(vector<char>& buffer, wchar_t* str, int pos=0, int bytes=0)
+	static void WriteString(std::vector<char>& buffer, wchar_t* str, int pos=0, int bytes=0)
 	{
 		for (int i=0; i<bytes; ++i) Write(buffer, str[i], pos+i*SIZEOFWCHAR_T);
 	}
@@ -256,7 +255,7 @@ public:
 public:
 	// Compound File functions
 	bool Create(const wchar_t* filename);
-	bool Open(const wchar_t* filename, ios_base::openmode mode=ios_base::in | ios_base::out);
+	bool Open(const wchar_t* filename, std::ios_base::openmode mode= std::ios_base::in | std::ios_base::out);
 	bool Close();
 	bool IsOpen();
 
@@ -264,45 +263,45 @@ public:
 	int ChangeDirectory(const wchar_t* path);
 	int MakeDirectory(const wchar_t* path);
 	int PresentWorkingDirectory(wchar_t* path);
-	int PresentWorkingDirectory(vector<wchar_t>& path);
+	int PresentWorkingDirectory(std::vector<wchar_t>& path);
 	int RemoveDirectory(const wchar_t* path);
 	int DelTree(const wchar_t* path);
-	int DirectoryList(vector<vector<wchar_t> >& list, const wchar_t* path=0);
+	int DirectoryList(std::vector<std::vector<wchar_t> >& list, const wchar_t* path=0);
 
 	// File functions
 	int MakeFile(const wchar_t* path);
 	int RemoveFile(const wchar_t* path);
 	int FileSize(const wchar_t* path, size_t& size);
 	int ReadFile(const wchar_t* path, char* data);
-	int ReadFile(const wchar_t* path, vector<char>&data);
+	int ReadFile(const wchar_t* path, std::vector<char>&data);
 	int WriteFile(const wchar_t* path, const char* data, size_t size);
-	int WriteFile(const wchar_t* path, const vector<char>&data, size_t size);
+	int WriteFile(const wchar_t* path, const std::vector<char>&data, size_t size);
 
 
 	// ANSI char functions
 	bool Create(const char* filename);
-	bool Open(const char* filename, ios_base::openmode mode=ios_base::in | ios_base::out);
+	bool Open(const char* filename, std::ios_base::openmode mode= std::ios_base::in | std::ios_base::out);
 	int ChangeDirectory(const char* path);
 	int MakeDirectory(const char* path);
 	int PresentWorkingDirectory(char* path);
-	int PresentWorkingDirectory(vector<char>& path);
+	int PresentWorkingDirectory(std::vector<char>& path);
 	int RemoveDirectory(const char* path);
 	int DelTree(const char* path);
 	int MakeFile(const char* path);
 	int RemoveFile(const char* path);
 	int FileSize(const char* path, size_t& size);
 	int ReadFile(const char* path, char* data);
-	int ReadFile(const char* path, vector<char>& data);
+	int ReadFile(const char* path, std::vector<char>& data);
 	int WriteFile(const char* path, char* data, size_t size);
-	int WriteFile(const char* path, vector<char>& data, size_t size);
+	int WriteFile(const char* path, std::vector<char>& data, size_t size);
 
 // Protected functions and data members
 protected:
 	// General functions and data members
-	void IncreaseLocationReferences(vector<size_t> indices);
-	void DecreaseLocationReferences(vector<size_t> indices);
+	void IncreaseLocationReferences(std::vector<size_t> indices);
+	void DecreaseLocationReferences(std::vector<size_t> indices);
 	void SplitPath(const wchar_t* path, wchar_t*& parentpath, wchar_t*& propertyname);
-	vector<char> block_;
+	std::vector<char> block_;
 	Block file_;
 
 	// Header related functions and data members
@@ -351,13 +350,13 @@ protected:
 	size_t DataSize(size_t startIndex, bool isBig);
 	size_t ReadData(size_t startIndex, char* data, bool isBig);
 	size_t WriteData(const char* data, size_t size, int startIndex, bool isBig);
-	void GetBlockIndices(size_t startIndex, vector<size_t>& indices, bool isBig);
+	void GetBlockIndices(size_t startIndex, std::vector<size_t>& indices, bool isBig);
 	size_t GetFreeBlockIndex(bool isBig);
 	void ExpandBATArray(bool isBig);
 	void LinkBlocks(size_t from, size_t to, bool isBig);
-	void FreeBlocks(vector<size_t>& indices, bool isBig);
-	vector<int> blocksIndices_;
-	vector<int> sblocksIndices_;	
+	void FreeBlocks(std::vector<size_t>& indices, bool isBig);
+	std::vector<int> blocksIndices_;
+	std::vector<int> sblocksIndices_;
 
 	// Properties related functions and data members
 	class Property
@@ -415,7 +414,7 @@ protected:
 		PropertyTree* parent_;
 		Property* self_;
 		size_t index_;
-		vector<PropertyTree*> children_;
+		std::vector<PropertyTree*> children_;
 	};
 	void LoadProperties();
 	void SaveProperties();
@@ -430,8 +429,8 @@ protected:
 	void DecreasePropertyReferences(PropertyTree* parentTree, size_t index);
 	PropertyTree* propertyTrees_;
 	PropertyTree* currentDirectory_;
-	vector<Property*> properties_;
-	vector<PropertyTree*> previousDirectories_;
+	std::vector<Property*> properties_;
+	std::vector<PropertyTree*> previousDirectories_;
 };
 } // YCompoundFiles namespace end
 
@@ -546,10 +545,10 @@ public:
 	virtual size_t DataSize();
 	virtual size_t RecordSize();
 	short code_;
-	vector<char> data_;
+	std::vector<char> data_;
 	size_t dataSize_;
 	size_t recordSize_;
-	vector<size_t> continueIndices_;
+	std::vector<size_t> continueIndices_;
 };
 
 struct BOF : public Record
@@ -604,8 +603,8 @@ struct LargeString
 	size_t DataSize();
 	size_t RecordSize();
 	size_t StringSize();
-	vector<wchar_t> wname_;
-	vector<char> name_;
+	std::vector<wchar_t> wname_;
+	std::vector<char> name_;
 	char unicode_;
 	short richtext_;
 	int phonetic_;
@@ -716,7 +715,7 @@ public:
 		virtual size_t RecordSize();
 		int stringsTotal_;
 		int uniqueStringsTotal_;
-		vector<LargeString> strings_;	
+		std::vector<LargeString> strings_;
 	};
 	struct ExtSST : public Record
 	{
@@ -726,9 +725,9 @@ public:
 		virtual size_t DataSize();
 		virtual size_t RecordSize();
 		short stringsTotal_;
-		vector<int> streamPos_;
-		vector<short> firstStringPos_;
-		vector<short> unused_;
+		std::vector<int> streamPos_;
+		std::vector<short> firstStringPos_;
+		std::vector<short> unused_;
 	};
 	size_t Read(const char* data);
 	size_t Write(char* data);
@@ -737,10 +736,10 @@ public:
 
 	BOF bof_;
 	Window1 window1_;
-	vector<Font> fonts_;
-	vector<XF> XFs_;
-	vector<Style> styles_;
-	vector<BoundSheet> boundSheets_;
+	std::vector<Font> fonts_;
+	std::vector<XF> XFs_;
+	std::vector<Style> styles_;
+	std::vector<BoundSheet> boundSheets_;
 	SharedStringTable sst_;
 	ExtSST extSST_;
 	YEOF eof_;
@@ -764,7 +763,7 @@ public:
 		size_t firstUsedRowIndex_;
 		size_t firstUnusedRowIndex_;
 		int unused2_;
-		vector<size_t> DBCellPos_;
+		std::vector<size_t> DBCellPos_;
 		
 	};
 	struct CalculationSettings
@@ -868,7 +867,7 @@ public:
 					virtual size_t RecordSize();
 					short rowIndex_;
 					short firstColIndex_;
-					vector<short> XFRecordIndices_;
+					std::vector<short> XFRecordIndices_;
 					short lastColIndex_;
 				};
 				struct MulRK : public Record
@@ -888,7 +887,7 @@ public:
 					};
 					short rowIndex_;
 					short firstColIndex_;
-					vector<XFRK> XFRK_;
+					std::vector<XFRK> XFRK_;
 					short lastColIndex_;
 				};
 				struct Number : public Record
@@ -934,7 +933,7 @@ public:
 						char lastColIndex_;
 						short options_;
 						int unused_;
-						vector<char> formula_;
+						std::vector<char> formula_;
 					};
 					struct ShrFmla : public Record
 					{
@@ -948,7 +947,7 @@ public:
 						char firstColIndex_;
 						char lastColIndex_;
 						short unused_;
-						vector<char> formula_;
+						std::vector<char> formula_;
 					};
 					struct ShrFmla1 : public Record
 					{
@@ -962,7 +961,7 @@ public:
 						char firstColIndex_;
 						char lastColIndex_;
 						short unused_;
-						vector<char> formula_;
+						std::vector<char> formula_;
 					};
 					struct Table : public Record
 					{
@@ -986,7 +985,7 @@ public:
 						virtual size_t Write(char* data);	
 						virtual size_t DataSize();
 						virtual size_t RecordSize();
-						vector<wchar_t> string_;
+						std::vector<wchar_t> string_;
 					};
 
 					Formula();
@@ -1000,7 +999,7 @@ public:
 					char result_[8];
 					short options_;
 					int unused_;
-					vector<char> RPNtoken_;
+					std::vector<char> RPNtoken_;
 					short type_;
 
 					Array array_;
@@ -1040,7 +1039,7 @@ public:
 				virtual size_t DataSize();
 				virtual size_t RecordSize();
 				int firstRowOffset_;
-				vector<short> offsets_;
+				std::vector<short> offsets_;
 			};			
 			
 			size_t Read(const char* data);
@@ -1048,8 +1047,8 @@ public:
 			size_t DataSize();
 			size_t RecordSize();
 		
-			vector<Row> rows_;
-			vector<CellBlock> cellBlocks_;
+			std::vector<Row> rows_;
+			std::vector<CellBlock> cellBlocks_;
 			DBCell dbcell_;
 		};	
 		size_t Read(const char* data);
@@ -1057,7 +1056,7 @@ public:
 		size_t DataSize();
 		size_t RecordSize();
 	
-		vector<RowBlock> rowBlocks_;		
+		std::vector<RowBlock> rowBlocks_;
 	};
 	struct Window2 : public Record
 	{
@@ -1169,8 +1168,8 @@ private: // Internal functions
 public:
 	CompoundFile file_;						///< Compound file handler.
 	Workbook workbook_;						///< Raw Workbook.
-	vector<Worksheet> worksheets_;			///< Raw Worksheets.
-	vector<BasicExcelWorksheet> yesheets_;	///< Parsed Worksheets.
+	std::vector<Worksheet> worksheets_;			///< Raw Worksheets.
+	std::vector<BasicExcelWorksheet> yesheets_;	///< Parsed Worksheets.
 };
 
 class BasicExcelWorksheet
@@ -1187,7 +1186,7 @@ public: // Worksheet functions
 	bool GetSheetName(wchar_t* name);	///< Get the current worksheet name. Returns false if name is in Ansi format.
 	bool Rename(const char* to);	///< Rename current Excel worksheet to another ANSI name. Returns true if successful, false if otherwise.
 	bool Rename(const wchar_t* to);///< Rename current Excel worksheet to another Unicode name. Returns true if successful, false if otherwise.
-	void Print(ostream& os, char delimiter=',', char textQualifier='\0'); ///< Print entire worksheet to an output stream, separating each column with the defined delimiter and enclosing text using the defined textQualifier. Leave out the textQualifier argument if do not wish to have any text qualifiers.
+	void Print(std::ostream& os, char delimiter=',', char textQualifier='\0'); ///< Print entire worksheet to an output stream, separating each column with the defined delimiter and enclosing text using the defined textQualifier. Leave out the textQualifier argument if do not wish to have any text qualifiers.
 
 public: // Cell functions
 	size_t GetTotalRows();	///< Total number of rows in current Excel worksheet.
@@ -1204,7 +1203,7 @@ private:
 	size_t sheetIndex_;					///< Index of worksheet in workbook.
 	size_t maxRows_;					///< Total number of rows in worksheet.
 	size_t maxCols_;					///< Total number of columns in worksheet.
-	vector<vector<BasicExcelCell> > cells_;	///< Cells matrix.
+	std::vector<std::vector<BasicExcelCell> > cells_;	///< Cells matrix.
 };
 
 class BasicExcelCell
@@ -1227,7 +1226,7 @@ public:
 	const char* GetString() const;		///< Get an ANSI string. Returns 0 if cell does not contain an ANSI string.
 	const wchar_t* GetWString() const;	///< Get an Unicode string. Returns 0 if cell does not contain an Unicode string.
 
-	friend ostream& operator<<(ostream& os, const BasicExcelCell& cell);	///< Print cell to output stream. Print a null character if cell is undefined.
+	friend std::ostream& operator<<(std::ostream& os, const BasicExcelCell& cell);	///< Print cell to output stream. Print a null character if cell is undefined.
 
 	void Set(int val);				///< Set content of current Excel cell to an integer.
 	void Set(double val);			///< Set content of current Excel cell to a double.
@@ -1245,8 +1244,8 @@ private:
 	int type_;				///< Type of value stored in current Excel cell. Contains one of the above enums.
 	int ival_;				///< Integer value stored in current Excel cell.
 	double dval_;			///< Double value stored in current Excel cell.
-	vector<char> str_;		///< ANSI string stored in current Excel cell. Include null character.
-	vector<wchar_t> wstr_;	///< Unicode string stored in current Excel cell. Include null character.
+	std::vector<char> str_;		///< ANSI string stored in current Excel cell. Include null character.
+	std::vector<wchar_t> wstr_;	///< Unicode string stored in current Excel cell. Include null character.
 };
 
 } // Namespace end

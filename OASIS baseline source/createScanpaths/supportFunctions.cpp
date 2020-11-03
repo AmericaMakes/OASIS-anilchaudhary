@@ -19,7 +19,6 @@ for file, folder and executable operations.
 
 #include "supportFunctions.h"
 
-using namespace std;
 namespace fs = std::experimental::filesystem;
 
 
@@ -27,12 +26,12 @@ namespace fs = std::experimental::filesystem;
 bool cleanupOnStart()
 {
 	system("cls");
-	cout << "Starting generateScanpaths!" << endl;
+	std::cout << "Starting generateScanpaths!" << std::endl;
 	system("del gl_sts.cfg >nul 2>&1");  // delete genLayer and genScan status files.  >nul 2>&1 avoids output if file does not exist
 	system("del gs_sts.cfg >nul 2>&1");
 	system("del vconfig.txt >nul 2>&1"); // delete the svg-scaling output created by genLayer
 	system("del *.svg >nul 2>&1");		 // delete any slic3r outputs which weren't moved to an output folder
-	string deleteErrFileCommand;
+	std::string deleteErrFileCommand;
 	deleteErrFileCommand = "del \"" + errorReportFilename + "\" >nul 2>&1";  // delete error reports from previous runs
 	system(deleteErrFileCommand.c_str());
 	return true;
@@ -41,7 +40,7 @@ bool cleanupOnStart()
 // allow user to navigate to and select a configuration file
 fileData selectConfigFile()
 {
-	cout << "\nPlease select an AmericaMakes configuration file in the same folder as your STL files\n";
+	std::cout << "\nPlease select an AmericaMakes configuration file in the same folder as your STL files\n";
 
 	fileData userFile;
 	LPSTR filename[MAX_PATH];
@@ -81,7 +80,7 @@ fileData selectConfigFile()
 		// User selected a file.  Convert items in wchar_t format to string via this process:
 		char DefChar1 = ' ';
 		//WideCharToMultiByte(CP_ACP, 0, ofn.lpstrFile, -1, ch1, 260, &DefChar1, NULL);
-		string fullFilePath = ofn.lpstrFile;
+		std::string fullFilePath = ofn.lpstrFile;
 		size_t periodPos = fullFilePath.find_last_of(".");
 		size_t slashPos = fullFilePath.find_last_of("\\");
 
@@ -93,18 +92,18 @@ fileData selectConfigFile()
 		if (userFile.extension != "xls") {
 			// not the right kind of file for configuration
 			userFile.xlsFileSelected = false;
-			cout << "\n***You selected something which is not a .xls file***\nThis is not an AmericaMakes configuration file ... cancelling execution\n";
+			std::cout << "\n***You selected something which is not a .xls file***\nThis is not an AmericaMakes configuration file ... cancelling execution\n";
 		}
 		else {
 			// .xls file selected
 			userFile.xlsFileSelected = true;
-			cout << "Configuration file selected: " << fullFilePath << endl;
+			std::cout << "Configuration file selected: " << fullFilePath << std::endl;
 		}	
 	}
 	else
 	{
 		// Something went wrong, or the user cancelled the selection
-		cout << "\nFile selection cancelled\n";
+		std::cout << "\nFile selection cancelled\n";
 		userFile.xlsFileSelected = false;
 
 		// All this stuff below is to tell us exactly what went wrong
@@ -134,7 +133,7 @@ fileData selectConfigFile()
 }
 
 // assess folder structure at/below the project folder indicated in config file
-string evaluateProjectFolder(AMconfig &configData)
+std::string evaluateProjectFolder(AMconfig &configData)
 {
 	// return value indicates one of several possibilities
 	// "" (blank) = project folder does not exist and/or exists but has no layer subfolder
@@ -142,7 +141,7 @@ string evaluateProjectFolder(AMconfig &configData)
 	// "LS" = project folder, layer subfolder and scan subfolder exist, and both layer_xxx.xml and scan_xxx.xml files are present
 
 	// 1. check if layer XML folder exists
-	string layerXMLFolder = configData.layerOutputFolder + "\\XMLdir";
+	std::string layerXMLFolder = configData.layerOutputFolder + "\\XMLdir";
 	if (!dirExists(layerXMLFolder)) {
 		// layer xml folder doesn't exist, so there are no layer files and we'll assume no scan files either
 		return "";
@@ -160,7 +159,7 @@ string evaluateProjectFolder(AMconfig &configData)
 	// layer xml folder exists and contains xml files
 	//
 	// 3. see if the scan xml folder exists
-	string scanXMLFolder = configData.scanOutputFolder + "\\XMLdir";
+	std::string scanXMLFolder = configData.scanOutputFolder + "\\XMLdir";
 	if (!dirExists(scanXMLFolder)) {
 		// indicate that there are layer files, but no scan folder or files
 		return "L";
@@ -183,7 +182,7 @@ string evaluateProjectFolder(AMconfig &configData)
 } // end function
 
 // provide the user with options based on existing layer and/or scan folders
-string getUserOption(AMconfig &configData, string folderStatus)
+std::string getUserOption(AMconfig &configData, std::string folderStatus)
 {
 	// Potential choices are based on folderStatus:
 	//	"" = layer folder doesn't exist
@@ -205,48 +204,48 @@ string getUserOption(AMconfig &configData, string folderStatus)
 	//	"bm" = run layer generation.  If successful, run scan generation.  Merge all results with existing layer and scan files (overwriting those with same layer number)
 	// Note that the "m" character is appended in a separate query to the user, based on overwrite versus merge.  Assume overwrite unless "m" is included
 
-	string returnVal = "cancel";
-	string validOptions = "";
+	std::string returnVal = "cancel";
+	std::string validOptions = "";
 	bool needConfirmation = false;
 
 	// Let the user know what output folders exist, if any
 	if (folderStatus == "") {
 		// no existing output
-		cout << "\n\nThe project folder has no existing output\n\n";
-		cout << "Please type L, B or C to select from the following options\n";
-		cout << "  L  Generate layer files (only), then quit\n";
-		cout << "  B  Generate both layer and scan files\n";
-		cout << "  C  Cancel scanpath generation\n\n";
+		std::cout << "\n\nThe project folder has no existing output\n\n";
+		std::cout << "Please type L, B or C to select from the following options\n";
+		std::cout << "  L  Generate layer files (only), then quit\n";
+		std::cout << "  B  Generate both layer and scan files\n";
+		std::cout << "  C  Cancel scanpath generation\n\n";
 		validOptions = "lb";
 	}
 	else {
 		if (folderStatus == "L") {
 			// existing layer output only
-			cout << "\n\nThe project folder contains existing layer files, but no scan files\n\n";
-			cout << "Please type L, B, S or C to select from the following options\n";
-			cout << "  L  Regenerate only the layer files     (then, choose to merge with or delete prior layer files)\n";
-			cout << "  B  Generate both layer and scan files  (then, choose to merge with or delete prior layer files\n";
-			cout << "  S  Generate scan files from existing layers\n";
-			cout << "  C  Cancel scanpath generation\n\n";
+			std::cout << "\n\nThe project folder contains existing layer files, but no scan files\n\n";
+			std::cout << "Please type L, B, S or C to select from the following options\n";
+			std::cout << "  L  Regenerate only the layer files     (then, choose to merge with or delete prior layer files)\n";
+			std::cout << "  B  Generate both layer and scan files  (then, choose to merge with or delete prior layer files\n";
+			std::cout << "  S  Generate scan files from existing layers\n";
+			std::cout << "  C  Cancel scanpath generation\n\n";
 			validOptions = "lbs";
 		}
 		else {
 			// existing layer and scan output
-			cout << "\n\nThe project folder contains existing layer and scan files\n\n";
-			cout << "Please type L, B, S or C to select from the following options\n";
-			cout << "  L  Regenerate layer files; delete scan files   (then, choose to merge with or delete prior layer files)\n";
-			cout << "  B  Regenerate both layer and scan files        (then, choose to merge with or delete prior files)\n";
-			cout << "  S  Regenerate scan files from existing layers  (then, choose to merge with or delete prior scan files)\n";
-			cout << "  C  Cancel scanpath generation\n\n";
+			std::cout << "\n\nThe project folder contains existing layer and scan files\n\n";
+			std::cout << "Please type L, B, S or C to select from the following options\n";
+			std::cout << "  L  Regenerate layer files; delete scan files   (then, choose to merge with or delete prior layer files)\n";
+			std::cout << "  B  Regenerate both layer and scan files        (then, choose to merge with or delete prior files)\n";
+			std::cout << "  S  Regenerate scan files from existing layers  (then, choose to merge with or delete prior scan files)\n";
+			std::cout << "  C  Cancel scanpath generation\n\n";
 			validOptions = "lbs";
 		}
 	}
 
 	// Get the selection
-	cout << "Enter your choice (not case sensitive) and press Enter: ";
-	string textEntry;
-	cin >> textEntry;  // get a string or null
-	string firstChar = "";
+	std::cout << "Enter your choice (not case sensitive) and press Enter: ";
+	std::string textEntry;
+	std::cin >> textEntry;  // get a string or null
+	std::string firstChar = "";
 	if ((textEntry.size() == 0) | (textEntry == "")) {
 		// user simply hit return or otherwise entered a null string
 		return "c"; }
@@ -267,15 +266,15 @@ string getUserOption(AMconfig &configData, string folderStatus)
 	}
 
 	// user entered a valid choice other than Cancel.  Determine if we need to ask for confirmation to eliminate existing files
-	cout << endl;
+	std::cout << std::endl;
 	if ((folderStatus == "") | ((folderStatus == "L")&(firstChar == "s"))) {
 		// don't need confirmation because either there is no existing output -or- there are layers and user is creating scanpaths only
 		return returnVal;
 	}
 	else {
 		// need user to decide whether to merge or delete the existing results
-		cout << "***Enter D to delete existing results (the usual choice) or M to merge old/new results (and overwrite any matching layer/scan#'s)\n***Anything other than d or m (plus Enter) cancels: ";
-		cin >> textEntry;  // get a string or null
+		std::cout << "***Enter D to delete existing results (the usual choice) or M to merge old/new results (and overwrite any matching layer/scan#'s)\n***Anything other than d or m (plus Enter) cancels: ";
+		std::cin >> textEntry;  // get a string or null
 		if ((textEntry.size() == 0) | (textEntry == "")) {
 			// user simply hit return or otherwise entered a null string
 			return "c";
@@ -294,12 +293,12 @@ string getUserOption(AMconfig &configData, string folderStatus)
 
 	// at this point the user either didn't need to decide about existing results, or, they chose delete or merge
 	// so we return with their selection
-	cout << endl;
+	std::cout << std::endl;
 	return returnVal;
 }
 
 // set up folder structure for output
-int setupOutputFolders(AMconfig &configData, string userChoice)
+int setupOutputFolders(AMconfig &configData, std::string userChoice)
 {
 	// we expect one of the following values in userChoice:
 	//	"l"  = Delete the layer and scan folders, if they exist.  Set up a new layer folder
@@ -328,7 +327,7 @@ int setupOutputFolders(AMconfig &configData, string userChoice)
 	bool scanFolderExists = false;
 
 	try {
-		string mdir, rdir; // used to generate system command strings (mdir to make directories, rdir to remove them)
+		std::string mdir, rdir; // used to generate system command strings (mdir to make directories, rdir to remove them)
 		if (dirExists(configData.projectFolder)) {
 			projectFolderExists = true;
 			if (dirExists(configData.layerOutputFolder)) {
@@ -341,7 +340,7 @@ int setupOutputFolders(AMconfig &configData, string userChoice)
 
 		// If the project folder itself does not exist, create it
 		if (!projectFolderExists) {
-			cout << "Creating project folder " << configData.projectFolder << endl;
+			std::cout << "Creating project folder " << configData.projectFolder << std::endl;
 			mdir = "mkdir \"" + configData.projectFolder + "\" >nul 2>&1";
 			system(mdir.c_str());
 		}
@@ -360,7 +359,7 @@ int setupOutputFolders(AMconfig &configData, string userChoice)
 				rdir = "rmdir \"" + configData.layerOutputFolder + "\" /s /q >nul 2>&1";
 				system(rdir.c_str());
 			}
-			cout << "Creating layer folder " << configData.layerOutputFolder << endl;
+			std::cout << "Creating layer folder " << configData.layerOutputFolder << std::endl;
 			mdir = "mkdir \"" + configData.layerOutputFolder + "\" >nul 2>&1";
 			system(mdir.c_str());
 			mdir = "mkdir \"" + configData.layerOutputFolder + "\\XMLdir\" >nul 2>&1";
@@ -373,7 +372,7 @@ int setupOutputFolders(AMconfig &configData, string userChoice)
 
 		// Recreate the scan folder, if userChoice is "s" or "b"
 		if (userChoice == "s" | userChoice == "b") {
-			cout << "Creating scan folder " << configData.scanOutputFolder << endl;
+			std::cout << "Creating scan folder " << configData.scanOutputFolder << std::endl;
 			mdir = "mkdir \"" + configData.scanOutputFolder + "\" >nul 2>&1";
 			system(mdir.c_str());
 			mdir = "mkdir \"" + configData.scanOutputFolder + "\\XMLdir\" >nul 2>&1";
@@ -392,7 +391,7 @@ int setupOutputFolders(AMconfig &configData, string userChoice)
 }
 
 // run layer or scan generation
-int callGenerationCode(string sysCommand, string statusFilename)
+int callGenerationCode(std::string sysCommand, std::string statusFilename)
 {
 	// sysCommand should include either genLayer or genScan plus full path to the configuration file
 	// statusFilename should be either the executable folder path plus \gl_sts.cfg or \gs_sts.cfg
@@ -424,7 +423,7 @@ int callGenerationCode(string sysCommand, string statusFilename)
 			&pi         // Pointer to PROCESS_INFORMATION structure
 		)
 			) {
-			cout << "*** Unable to start a new process via\n" << sysCommand << endl;
+			std::cout << "*** Unable to start a new process via\n" << sysCommand << std::endl;
 			system("pause\n");
 			return -1;
 		}
@@ -473,17 +472,17 @@ bool cleanupOnFinish()
 bool createScanZipfile(AMconfig &configData) {
 	// try/catch in case of error
 	try {
-		cout << "Creating a .scn (zip) file containing the scan output files\n";
+		std::cout << "Creating a .scn (zip) file containing the scan output files\n";
 		// create a zip file in the executable folder.  If everything goes smoothly, we'll later change its extension to .scn
 		HZIP hz = CreateZip(__T("scanpath_files.zip"), 0);
 		if (hz == 0) {
 			// hz, the zip file handle, will be zero if the file can't be created and opened for use
-			cout << "*** Was not able to create scanpath_files.zip in the executable folder\n    Cancelling zip\n";
+			std::cout << "*** Was not able to create scanpath_files.zip in the executable folder\n    Cancelling zip\n";
 			return 1;
 		}
 
-		string scanXMLfolder = configData.scanOutputFolder + "\\XMLdir\\";
-		string fname, pname, sysCommand;
+		std::string scanXMLfolder = configData.scanOutputFolder + "\\XMLdir\\";
+		std::string fname, pname, sysCommand;
 		ZRESULT fnResult;  // format for zip.cpp results
 		int xmlCount = 0;  // number of XML files found and added to zip
 
@@ -500,7 +499,7 @@ bool createScanZipfile(AMconfig &configData) {
 			{	// found an xml file
 				fname = p.path().stem().string() + ".xml";  // filename without path
 				pname = p.path().string();					// full path to the file
-				cout << "   Adding " << fname;
+				std::cout << "   Adding " << fname;
 				// reset cursor position for next iteration
 				SetConsoleCursorPosition(hStdout, cursorPosition);
 
@@ -512,7 +511,7 @@ bool createScanZipfile(AMconfig &configData) {
 				// get a handle to the file using full path
 				HANDLE hfout = CreateFile(wsp, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 				if (hfout == INVALID_HANDLE_VALUE) {
-					cout << "\nCould not access " << fname << " due to error " << GetLastError() << endl;
+					std::cout << "\nCould not access " << fname << " due to error " << GetLastError() << std::endl;
 					// at this point we could choose to continue iterating over XML files or simply halt
 				}
 				else {
@@ -536,20 +535,20 @@ bool createScanZipfile(AMconfig &configData) {
 			// there is at least one file in the archive, so we consider it valid
 			
 			// change extension to the .scn expected by LabVIEW
-			cout << "Changing extension to .scn... ";
+			std::cout << "Changing extension to .scn... ";
 			sysCommand = "rename scanpath_files.zip scanpath_files.scn";
 			system(sysCommand.c_str());
 
 			// move the scn file to the project folder
 			sysCommand = "move scanpath_files.scn \"" + configData.projectFolder + "\" >nul 2>&1";
 			system(sysCommand.c_str());
-			cout << "\nDone! scanpath_files.scn contains " << xmlCount << " files and is located in\n" << configData.projectFolder << endl << endl;
+			std::cout << "\nDone! scanpath_files.scn contains " << xmlCount << " files and is located in\n" << configData.projectFolder << std::endl << std::endl;
 			// report success
 			return 0;
 		}
 		else
 		{
-			cout << "\nNo XML files were found in the scan folder, or at least none which could be accessed\nThe zip archive has been deleted\n";
+			std::cout << "\nNo XML files were found in the scan folder, or at least none which could be accessed\nThe zip archive has been deleted\n";
 			// delete the zip or scn file, if it exists
 			system("del scanpath_files.* >nul 2>&1");
 			return 1;
@@ -557,7 +556,7 @@ bool createScanZipfile(AMconfig &configData) {
 	}
 	catch (...) {
 		// something went wrong!
-		cout << "\nWe encountered an unknown error while zipping the xml files\nZip has been deleted\n";
+		std::cout << "\nWe encountered an unknown error while zipping the xml files\nZip has been deleted\n";
 		// delete the zip file, if it exists
 		system("del scanpath_files.* >nul 2>&1");
 		return 1;

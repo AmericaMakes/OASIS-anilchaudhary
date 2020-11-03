@@ -42,16 +42,16 @@ struct segment
 	int id;				// unique segment identifier (optional)
 	vertex start, end;	// start, end coordinates.  This code only uses the start coordinate for most segments
 								// and omits the end coordinate - which is taken from the next segment in a series.
-	string idSegStyl;	// SegmentStyleID associated with the segment, which contains power/speed/focus/velocity/wobble
+	std::string idSegStyl;	// SegmentStyleID associated with the segment, which contains power/speed/focus/velocity/wobble
 	int isMark = 0;		// Indicates whether the segment is a mark or jump.  Simplifies the creation of SVG output
 };
 
 //data structure to define path, a collection of similar feautred segment
 struct path
 {
-	vector<segment> vecSg;	// collection of segments that define a path
-	string type;			// keyword identifying generic ideas to group similar paths, e.g., hatch, contour, etc. 
-	string tag;				// user defined tag for the region in which the part resides.  Corresponds to a region profile
+	std::vector<segment> vecSg;	// collection of segments that define a path
+	std::string type;			// keyword identifying generic ideas to group similar paths, e.g., hatch, contour, etc. 
+	std::string tag;				// user defined tag for the region in which the part resides.  Corresponds to a region profile
 	int SkyWritingMode = 0;	// Defines how and whether skywriting should be enabled for this path
 };
 
@@ -60,17 +60,17 @@ struct path
 struct trajectory
 {
 	int trajectoryNum = 1;			// Identifies this trajectory in the build order (starting from lowest number)
-	string pathProcessingMode = "sequential"; // Indicates how multiple paths within this trajectory will be built.  sequential or concurrent
-	vector<path> vecPath;			// collection of laser paths, created after hatching and/or contouring the associated regions
+	std::string pathProcessingMode = "sequential"; // Indicates how multiple paths within this trajectory will be built.  sequential or concurrent
+	std::vector<path> vecPath;			// collection of laser paths, created after hatching and/or contouring the associated regions
 	//
 	// The following trajRegion... vectors should all be the same length, and each element refer to the region linked in trajRegionLinks
-	vector<int> trajRegions;		// list of regions under this trajectory number as identified by their order in the region list from XML.
+	std::vector<int> trajRegions;		// list of regions under this trajectory number as identified by their order in the region list from XML.
 		// NOTE - if contour and hatch for a region use the same trajectory#, they will appear twice
 		// in trajRegions and trajRegionTypes because the two components are different paths and have different trajRegionTypes values
-	vector<string> trajRegionTypes;	// identifies which of the two types each element of trajRegions refers to.  contour or hatch
-	vector<string> trajRegionTags;	// indicates the tag assigned to the corresponding region in trajRegions
-	vector<bool> trajRegionIsHatched; // indicates whether each region has already been hatched, to enable multiple regions to be done concurrently
-	vector<region*> trajRegionLinks;// link to the actual regions listed in trajRegions, to simplify referencing
+	std::vector<std::string> trajRegionTypes;	// identifies which of the two types each element of trajRegions refers to.  contour or hatch
+	std::vector<std::string> trajRegionTags;	// indicates the tag assigned to the corresponding region in trajRegions
+	std::vector<bool> trajRegionIsHatched; // indicates whether each region has already been hatched, to enable multiple regions to be done concurrently
+	std::vector<region*> trajRegionLinks;// link to the actual regions listed in trajRegions, to simplify referencing
 };
 
 //data structure to represent a subset of path
@@ -78,7 +78,7 @@ struct hRegion
 {
 	vertex start;
 	vertex end;
-	vector<segment> vecSg;
+	std::vector<segment> vecSg;
 };
 
 //data structure to represent a vector
@@ -102,46 +102,46 @@ ray e2r(edge e);
 
 //given an vector of edge lists (assumed to be closed contours), their types (inner/outer) and offset, this function calculates a new set of offseted edges.
 // only one of edgeListOut or polyVectorsOut will be populated, based on returnPolyVectors.  true --> polyVectorsOut is used, false --> edgeListOut instead
-void edgeOffset(layer &L, vector<int> regionIndex, vector<edge> &edgeListOut, vector<vector<edge>> &polyVectorsOut, double offset, bool returnPolyVectors);
+void edgeOffset(layer &L, std::vector<int> regionIndex, std::vector<edge> &edgeListOut, std::vector<std::vector<edge>> &polyVectorsOut, double offset, bool returnPolyVectors);
 
 // helper function to determine endpoints of hatching (min/max x or y coordinates)
-void findHatchBoundary(vector<vertex> &in, double hatchAngle, double *a_min, double *a_max);
+void findHatchBoundary(std::vector<vertex> &in, double hatchAngle, double *a_min, double *a_max);
 
 //helper function to find intersection between an edge and a hatch line using hatch angle and x or y intercept
-int findIntersection(vertex *out, double hatchAngle, double hatchAngle_rads, vector<vertex> BB, double intercept, edge e, double hatchFunctionValue);
+int findIntersection(vertex *out, double hatchAngle, double hatchAngle_rads, std::vector<vertex> BB, double intercept, edge e, double hatchFunctionValue);
 
 //helper function to sort vertices with ascending y coordinates
-void yAsc(vector<vertex> &vertexList);
+void yAsc(std::vector<vertex> &vertexList);
 
 //helper function to sort vertices with descending y coordinates
-void yDsc(vector<vertex> &vertexList);
+void yDsc(std::vector<vertex> &vertexList);
 
 //helper function to sort vertices with ascending x coordinates
-void xAsc(vector<vertex> &vertexList);
+void xAsc(std::vector<vertex> &vertexList);
 
 //helper function to sort vertices with descending x coordinates
-void xDsc(vector<vertex> &vertexList);
+void xDsc(std::vector<vertex> &vertexList);
 
 //helper function that removes duplicate entries, which may arise when a hatch line crosses precisely through a vertex of multiple edges
-vector<vertex> eliminateDuplicateVertices(vector<vertex> &vertexList);
+std::vector<vertex> eliminateDuplicateVertices(std::vector<vertex> &vertexList);
 
 //function to calculate distance between two vertices
 double dist(vertex &v1, vertex &v2);
 
 // function to determine whether single-stripes remain to be marked on this layer or higher
-vector<int> singleStripeCount(int layerNum, AMconfig &configData);  // return value is vector of stripe trajectories appearing on this layer
+std::vector<int> singleStripeCount(int layerNum, AMconfig &configData);  // return value is vector of stripe trajectories appearing on this layer
 
 // function to create marks and jumps corresponding to the single-stripe inputs for a particular layer and stripe trajectory#
 path singleStripes(int layerNum, int trajectoryNum, AMconfig &configData);
 
 // function to determine hatching path for all regions with a particular tag, without any constraints on distance
-path hatch(layer &L, vector<int> regionIndex, regionProfile &rProfile, double offset, double hatchAngle, double a_min, double a_max, bool outputIntegerIDs, vector<vertex> boundingBox);
+path hatch(layer &L, std::vector<int> regionIndex, regionProfile &rProfile, double offset, double hatchAngle, double a_min, double a_max, bool outputIntegerIDs, std::vector<vertex> boundingBox);
 
 // function to determine hatching path for all regions with a particular tag - while minimizing total travel distance
-path hatchOPT(layer &L, vector<int> regionIndex, regionProfile &rProfile, double offset, double hatchAngle, double a_min, double a_max, bool outputIntegerIDs, vector<vertex> boundingBox);
+path hatchOPT(layer &L, std::vector<int> regionIndex, regionProfile &rProfile, double offset, double hatchAngle, double a_min, double a_max, bool outputIntegerIDs, std::vector<vertex> boundingBox);
 
 // function to create a contouring path for the inner or outer boundary of a specific region
-path contour(layer &L, vector<int> regionIndex, regionProfile &rProfile, double offset, vector<vertex> BB, bool outputIntegerIDs);
+path contour(layer &L, std::vector<int> regionIndex, regionProfile &rProfile, double offset, std::vector<vertex> BB, bool outputIntegerIDs);
 
 //decides whether edges are turing CW or CCW to determine whether that portion of the curve is convex or not
 int getTurnDir(edge ev1, edge ev2);
@@ -150,7 +150,7 @@ int getTurnDir(edge ev1, edge ev2);
 void displayPath(path P);
 
 //find the bounding box of the layer
-vector<vertex> getBB(layer &L);
+std::vector<vertex> getBB(layer &L);
 
 //failsafe to see if any hatch/contour is leaving the bounding box. The line in question is defined by the vertices
-int findInt(vector<vertex> &BB, vertex v1, vertex v2);
+int findInt(std::vector<vertex> &BB, vertex v1, vertex v2);

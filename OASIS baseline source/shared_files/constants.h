@@ -23,12 +23,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include <string>
 
-using namespace std;
-
 constexpr auto AMconfigFileVersion = 3;	// Updated 2020-07-20.  Compatible America Makes configuration file version for this code
 // Includes numerous updates versus original config file across most of the tabs
 
-static const string schemaVersion = "2020-03-23";
+static const std::string schemaVersion = "2020-03-23";
 // This is the date of the XML schema used by this scanpath generation code.
 // schemaVersion will be output to each XML scan file
 
@@ -50,7 +48,7 @@ static const bool outputCoordSystem = false;
 // name of the text file which will be created in the config-file directory if errors occur.
 // the file will be created in the same folder as the configuration file, unless that folder is somehow inaccessible,
 // in which case the file will be created in the same folder as generateScanpaths.exe
-static const string errorReportFilename = "ALSAM_Scanpath_errors.txt";
+static const std::string errorReportFilename = "ALSAM_Scanpath_errors.txt";
 
 // intersectRange defines how "close enough" an edge must be to a hatch line be to be considered intersecting, in mm.
 // This allows a small amount of leeway in findIntersection (between hatches & edges) due to floating point precision
