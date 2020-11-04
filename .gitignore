@@ -12,3 +12,6 @@ RelWithDebInfo*/
 CMakeLists.txt.user*
 download/
 */.vs/
+*.suo
+*.db
+*.user

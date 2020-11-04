@@ -101,7 +101,8 @@ int main()
 		deleteZipFileCommand = "del \"" + configData.projectFolder + "\\scanpath_files.*\" >nul 2>&1";
 		system(deleteZipFileCommand.c_str());
 		// set current directory back to the executable folder so that we can find genLayer, genScan and slic3r
-		LPCSTR executableFolder = (configData.executableFolder + "\\").c_str();
+		std::string exeFolder = configData.executableFolder + "\\";
+		LPCSTR executableFolder = exeFolder.c_str();
 		if (!SetCurrentDirectoryA(executableFolder)) {
 			std::cout << "Could not set the current directory back to the executable folder!" << std::endl;
 			system("pause");

@@ -35,8 +35,7 @@ void findHatchBoundary(std::vector<vertex> &in, double hatchAngle, double *a_min
 	// If hatchAngle is 45 to 135 or 225 to 315 degrees we evaluate along the x axis
 	double hatchAngle_rads = hatchAngle * 3.14159265358979323846 / 180;  // hatch angle in radians
 	int vLen = in.size();
-	std::vector<double> a;
-	a.reserve(vLen);  // pre-size the vector
+	std::vector<double> a(vLen);  // pre-size the vector
 	vertex v;
 
 	// Determine whether to evaluate along x or y axis, based on hatchAngle
