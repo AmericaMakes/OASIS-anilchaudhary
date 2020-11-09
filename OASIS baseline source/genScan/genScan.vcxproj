@@ -155,6 +155,7 @@
     <ClInclude Include="..\shared_files\readExcelConfig.h" />
     <ClInclude Include="clipper.hpp" />
     <ClInclude Include="Layer.h" />
+    <ClInclude Include="ProcessingUtilities.h" />
     <ClInclude Include="readLayerXML.h" />
     <ClInclude Include="ScanPath.h" />
     <ClInclude Include="simple_svg_1.0.0.hpp" />
@@ -170,6 +171,7 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Level1</WarningLevel>
     </ClCompile>
     <ClCompile Include="Layer.cpp" />
+    <ClCompile Include="ProcessingUtilities.cpp" />
     <ClCompile Include="readLayerXML.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\200008936\Documents\C files\ALSAM3024\shared_files;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

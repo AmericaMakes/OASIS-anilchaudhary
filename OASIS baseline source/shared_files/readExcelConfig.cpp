@@ -329,6 +329,7 @@ void readRegionProfiles(BasicExcelWorksheet* sheet5, AMconfig* configData, std::
 		regionRow.scHatch = sheet5->Cell(rowNum, 11)->GetInteger();
 		regionRow.layer1hatchAngle = sheet5->Cell(rowNum, 12)->GetDouble();
 		regionRow.hatchLayerRotation = sheet5->Cell(rowNum, 13)->GetDouble();
+		regionRow.hatchStripeWidth = sheet5->Cell(rowNum, 15)->GetDouble();
 		//
 		// Add this row to the region-profile structure
 		(*configData).regionProfileList.push_back(regionRow);

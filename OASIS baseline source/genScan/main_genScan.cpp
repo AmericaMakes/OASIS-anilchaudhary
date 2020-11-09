@@ -41,6 +41,7 @@ from the configuration files.
 #include "BasicExcel.hpp"
 #include "errorChecks.h"
 #include "io_functions.h"
+#include "ProcessingUtilities.h"
 
 
 constexpr auto DISPLAYLAYER = 0;
@@ -427,6 +428,10 @@ int main(int argc, char **argv)
 				#if printTraj
 					std::cout << "Trajectory loop completed; preparing to write XML and SVG files" << std::endl;
 				#endif
+
+				// Post-Processing Options
+				utils::addHatchStriping(configData, i, trajectoryList, bounds);
+
 				// write the XML schema to a DOM and then to a file
 				std::string fullXMLpath = configData.scanOutputFolder + "\\XMLdir\\" + xfn;
 				createSCANxmlFile(fullXMLpath, i, configData, trajectoryList);
