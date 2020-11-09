@@ -27,6 +27,7 @@ from the configuration files.
 // This complements printTrajectories found in writeScanXML.h, which calls out trajectories as they are processed
 
 
+#include <array>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
@@ -86,7 +87,8 @@ void clearVars(layer* L, trajectory* T, path* tempPath)
 	(*tempPath).vecSg.shrink_to_fit();
 }
 
-
+std::map<std::string, std::array<double, 4>> determineRegionBounds(const std::vector<std::string>& regionTags, const std::string xmlLayerDir,
+																   AMconfig& configData, errorCheckStructure& errorData);
 int main(int argc, char **argv)
 // Required argument for genScan.exe:
 // <filename>.xls = full path to configuration file (surrounded by "").  If not specified, error will be reported
@@ -207,6 +209,9 @@ int main(int argc, char **argv)
 	for (int r = 0; r < configData.regionProfileList.size(); r++)
 	{	tagList.push_back(configData.regionProfileList[r].Tag);	}
 
+	// Determine bounding box around each region
+	std::map<std::string, std::array<double, 4>> bounds = determineRegionBounds(tagList, xmlFolder, configData, errorData);
+
 	// set up variables for cursor control
 	COORD cursorPosition;
 	HANDLE hStdout;
@@ -272,11 +277,11 @@ int main(int argc, char **argv)
 				{
 					trajIndex.push_back((*itl).trajectoryNum);	// This creates a list of trajectories, but not in numerical order
 					#if printTraj
-						cout << "Identified from Layer file: trajectory " << (*itl).trajectoryNum << endl;
+						std::cout << "Identified from Layer file: trajectory " << (*itl).trajectoryNum << std::endl;
 					#endif
 				}
 				#if printTraj
-					cout << "Size of trajectoryList: " << trajectoryList.size() << endl;
+					std::cout << "Size of trajectoryList: " << trajectoryList.size() << std::endl;
 				#endif
 
 				// Iterate across the list of trajectories in trajList and generate scan paths for their regions
@@ -290,8 +295,8 @@ int main(int argc, char **argv)
 					// the hatching or contouring function and also mark these regions isHatched = TRUE.
 					int numRegions = trajectoryList[tNum].trajRegions.size();  // Number of regions within this trajectory
 					#if printTraj
-						cout << "Processing trajectory " << trajectoryList[tNum].trajectoryNum << " in position " << tNum << endl;
-						cout << "	This trajectory contains " << numRegions << " regions" << endl;
+						std::cout << "Processing trajectory " << trajectoryList[tNum].trajectoryNum << " in position " << tNum << std::endl;
+						std::cout << "	This trajectory contains " << numRegions << " regions" << std::endl;
 					#endif
 					int regionIndex, rProfileNum;
 					std::string regionType, regionTag;
@@ -302,12 +307,12 @@ int main(int argc, char **argv)
 					for (int rNum = 0; rNum != numRegions; ++rNum)
 					{
 						#if printTraj
-							cout << "	  Evaluating region number " << rNum << endl;
+							std::cout << "	  Evaluating region number " << rNum << std::endl;
 						#endif
 						if (trajectoryList[tNum].trajRegionIsHatched[rNum] == false)
 						{
 							#if printTraj
-								cout << "		This region has not yet been scanpathed... proceeding" << endl;
+								std::cout << "		This region has not yet been scanpathed... proceeding" << std::endl;
 							#endif
 							regionsWithinPath.clear();
 							//regionsWithinPath.push_back(rNum);
@@ -320,7 +325,7 @@ int main(int argc, char **argv)
 							rProfileNum = std::distance(tagList.begin(), temp3);
 							rProfile = &(configData.regionProfileList[rProfileNum]); // Create shortcut to the indicated region profile
 							#if printTraj							
-								cout << "		Creating scanpath for trajectory " << trajectoryList[tNum].trajectoryNum << " > region tag " << regionTag << " > type " << regionType << ", regionNum " << rNum << endl;
+								std::cout << "		Creating scanpath for trajectory " << trajectoryList[tNum].trajectoryNum << " > region tag " << regionTag << " > type " << regionType << ", regionNum " << rNum << std::endl;
 							#endif
 
 							// If this region is a hatch rather than contour, compute the hatch angle and min/max hatch boundaries based on this angle
@@ -339,7 +344,7 @@ int main(int argc, char **argv)
 							for (int rNum2 = rNum+1; rNum2 < numRegions; ++rNum2)
 							{
 								#if printTraj
-									cout << "			Comparing type and tag for region number " << rNum2 << endl;
+									std::cout << "			Comparing type and tag for region number " << rNum2 << std::endl;
 								#endif
 								if ((regionType == trajectoryList[tNum].trajRegionTypes[rNum2]) &
 									(regionTag == trajectoryList[tNum].trajRegionTags[rNum2]))
@@ -347,7 +352,7 @@ int main(int argc, char **argv)
 									regionsWithinPath.push_back(trajectoryList[tNum].trajRegions[rNum2]);
 									trajectoryList[tNum].trajRegionIsHatched[rNum2] = true;
 									#if printTraj
-										cout << "				Adding region tag " << regionTag << " > type " << regionType << ", regionNum " << rNum2 << endl;
+										std::cout << "				Adding region tag " << regionTag << " > type " << regionType << ", regionNum " << rNum2 << std::endl;
 									#endif
 								} //end if regionType
 							} // end for rNum2
@@ -359,7 +364,7 @@ int main(int argc, char **argv)
 							{	// Do contouring.
 								// Loop over the indicated number of contours, create a contour and increment the contour offset
 								#if printTraj
-									cout << "		  Creating contour scanpaths" << endl;
+									std::cout << "		  Creating contour scanpaths" << std::endl;
 								#endif
 								for (int n = 0; n < (*rProfile).numCntr; n++)
 								{
@@ -376,8 +381,8 @@ int main(int argc, char **argv)
 							if ((regionType == "hatch") & ((*rProfile).hatchStyleID != "") & ((*rProfile).resHatch > 0))
 							{	
 								#if printTraj
-									cout << "			Creating hatch scanpaths for hatch angle " << hatchAngle << endl;
-									cout << "			  a_min = " << a_min << ", a_max = " << a_max << endl;
+									std::cout << "			Creating hatch scanpaths for hatch angle " << hatchAngle << std::endl;
+									std::cout << "			  a_min = " << a_min << ", a_max = " << a_max << std::endl;
 								#endif
 								// Do hatching for all regions with this tag
 								// First compute the actual hatch offset relative to contours, if contouring is enabled for the region
@@ -405,22 +410,22 @@ int main(int argc, char **argv)
 							}  // end hatching
 
 							#if printTraj
-								cout << "		End if (trajectoryList[tNum].trajRegionIsHatched[rNum] == false)" << endl;
+								std::cout << "		End if (trajectoryList[tNum].trajRegionIsHatched[rNum] == false)" << std::endl;
 							#endif
 						} // if trajRegionIsHatched
 
 						#if printTraj
-							cout << "		End for (int rNum = 0; rNum != numRegions; ++rNum)" << endl;
+							std::cout << "		End for (int rNum = 0; rNum != numRegions; ++rNum)" << std::endl;
 						#endif
 					} // for rNum
 
 					#if printTraj
-						cout << "		End for (int temp1 = 0; temp1 != numTrajectories; ++temp1)" << endl;
+						std::cout << "		End for (int temp1 = 0; temp1 != numTrajectories; ++temp1)" << std::endl;
 					#endif
 				} // for numTrajectories
 
 				#if printTraj
-				cout << "Trajectory loop completed; preparing to write XML and SVG files" << endl;
+					std::cout << "Trajectory loop completed; preparing to write XML and SVG files" << std::endl;
 				#endif
 				// write the XML schema to a DOM and then to a file
 				std::string fullXMLpath = configData.scanOutputFolder + "\\XMLdir\\" + xfn;
@@ -433,11 +438,11 @@ int main(int argc, char **argv)
 					scan2SVG(fullSVGpath, trajectoryList, 2000, mag, xo, yo);
 				}
 				#if printTraj
-					cout << "Preparing to CoUninitialize" << endl;
+					std::cout << "Preparing to CoUninitialize" << std::endl;
 				#endif
 				CoUninitialize();  // release the Domain Object Model
 				#if printTraj
-					cout << "CoUninitialize complete" << endl << endl;
+					std::cout << "CoUninitialize complete" << endl << std::endl;
 				#endif
 			}  // if bCont
 		}  // if succeeded
@@ -457,3 +462,59 @@ CleanUp:
 	std::cout << "CleanUp section reached" << std::endl;
 	return 0;
 };
+
+std::map<std::string, std::array<double, 4>> determineRegionBounds(const std::vector<std::string>& regionTags, const std::string xmlLayerDir,
+																   AMconfig& configData, errorCheckStructure& errorData)
+{
+	std::map<std::string, std::array<double, 4>> bounds; // <regionTag, {xMin, yMin, xMax, yMax}>
+	for (auto& reg : regionTags)
+		bounds[reg] = { DBL_MAX, DBL_MAX, -DBL_MAX, -DBL_MAX };
+
+	layer L;
+	std::string file;
+	HRESULT hr = CoInitialize(NULL);  // attempt to set up the output Domain Object Model (DOM).  If this fails, we can't create XML
+	int bCont = 1;
+	if (SUCCEEDED(hr))
+	{
+		for (auto& p : std::filesystem::directory_iterator(xmlLayerDir))
+		{
+			if ((p.path().extension() == ".xml") && (p.path().stem().string().substr(0, 6) == "layer_") && has_only_digits(p.path().stem().string().substr(6, 12).c_str()))
+			{
+				file = p.path().string();
+				//read the XML layer file
+				std::wstring wfn(file.begin(), file.end());
+				LPCWSTR  wszValue = wfn.c_str();
+				int fn_err = loadDOM(wszValue);
+				if (fn_err != 0)
+				{
+					// could not load a particular layer file
+					std::string errorMsg = "Could not load " + p.path().string() + "\n";
+					updateErrorResults(errorData, true, "loadDOM", errorMsg, "", configData.configFilename, configData.configPath);
+					bCont = 0;
+				}
+				if (bCont)
+				{
+					// convert the data in xml file to appropriate data structure
+					L = traverseDOM();
+					int verifyResult = verifyLayerStructure(configData, p.path().string(), L, regionTags);  // check that the layer is valid.  If not, function will end genScan execution
+
+					// Loop through regions in layer
+					for (auto& r : L.s.rList)
+					{
+						// Loop through edges in region
+						for (auto& e : r.eList)
+						{
+							// Note: End of this edge will be start of next edge
+							if (e.s.x < bounds[r.tag][0]) bounds[r.tag][0] = e.s.x;
+							if (e.s.x > bounds[r.tag][2]) bounds[r.tag][2] = e.s.x;
+							if (e.s.y < bounds[r.tag][1]) bounds[r.tag][1] = e.s.y;
+							if (e.s.y > bounds[r.tag][3]) bounds[r.tag][3] = e.s.y;
+						}
+					}
+				}
+			}
+		}
+	}
+	CoUninitialize();  // release the Domain Object Model
+	return bounds;
+}
