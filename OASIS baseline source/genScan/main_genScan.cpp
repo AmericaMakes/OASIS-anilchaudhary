@@ -430,7 +430,7 @@ int main(int argc, char **argv)
 				#endif
 
 				// Post-Processing Options
-				utils::addHatchStriping(configData, i, trajectoryList, bounds);
+				utils::updateTrajectories(trajectoryList, configData, L, i, bounds);
 
 				// write the XML schema to a DOM and then to a file
 				std::string fullXMLpath = configData.scanOutputFolder + "\\XMLdir\\" + xfn;

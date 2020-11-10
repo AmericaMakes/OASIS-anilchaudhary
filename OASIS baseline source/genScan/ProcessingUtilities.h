@@ -5,6 +5,8 @@
 namespace utils
 {
 
+const double PI = 3.14159265358979323846;
+
 std::array<double, 2> difference(const std::array<double, 2>& v1, const std::array<double, 2>& v2);
 
 std::array<double, 2> sum(const std::array<double, 2>& v1, const std::array<double, 2>& v2);
@@ -21,13 +23,27 @@ bool intersection(const std::array<double, 2>& segStart, const std::array<double
 	const std::array<double, 2>& linePt, const std::array<double, 2>& lineDir,
 	std::array<double, 2>& intersectPt);
 
-void addHatchStriping(const AMconfig& configData, const size_t& layerNum, std::vector<trajectory>& trajectoryList,
-	const std::map<std::string, std::array<double, 4>>& bounds);
 
-std::vector<std::array<double,2>> calculateStripeLinePtsForRegion(const std::array<double, 4>& regBound, const std::array<double,2>& stripOffsetDir,
-																  const double& stripeWidth);
-std::vector<std::vector<segment>> splitHatchSegsByStripes(const std::vector<segment>& hatchSegs, const std::vector<size_t>& markInds,
+void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig& configData, const layer& layer, const size_t& layerNum,
+						const std::map<std::string, std::array<double, 4>>& bounds);
+
+std::vector<std::vector<segment>> splitSegmentsWithStripes(const std::vector<segment>& hatchSegs, const double& stripeWidth,
+														   const double& scanAngle, const std::array<double, 4>& bound);
+
+std::vector<std::vector<segment>> splitHatchSegsByStripes(const std::vector<segment>& hatchSegs,
 														  const std::vector<std::array<double, 2>>& stripePts, const std::array<double, 2>& stripeDir,
 														  const double& stripeWidth, const std::array<double, 2>& scanDir);
+
+std::vector<std::array<double, 2>> calculateStripeLinePtsForRegion(const std::array<double, 4>& regBound, const std::array<double, 2>& stripOffsetDir,
+																   const double& stripeWidth);
+
+std::vector<std::vector<segment>> groupSegmentsByRegions(const layer& layer, const std::vector<segment>& segs);
+
+bool isInside(const std::vector<edge>& bound, const vertex& pt);
+
+
+void updateHatchSpacing(AMconfig& configData);
+
+double calculateHatchSpacing(const double& energyDensity, const double& power, const double& velocity, const double& bedDrop);
 
 }

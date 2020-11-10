@@ -75,69 +75,78 @@ bool intersection(const std::array<double, 2>& segStart, const std::array<double
 	return false;
 }
 
-void addHatchStriping(const AMconfig& configData, const size_t& layerNum, std::vector<trajectory>& trajectoryList,
-	const std::map<std::string, std::array<double, 4>>& bounds)
-{
-	const double PI = 3.14159265358979323846;
 
-	// Create mapping of regions to region info (stripe width and hatch angle)
-	std::map<std::string, std::array<double, 3>> regInfo; // <regionTag, <stripeWidth, layer1HatchAngle, hatchLayerRotation>>
+void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig& configData, const layer& layer, const size_t& layerNum,
+						const std::map<std::string, std::array<double, 4>>& bounds)
+{
+	// Create mapping of region names to region profiles
+	std::map<std::string, regionProfile> regInfo; // <regionTag, region>
 	for (auto& reg : configData.regionProfileList)
-		regInfo[reg.Tag] = { reg.hatchStripeWidth, reg.layer1hatchAngle, reg.hatchLayerRotation };
+		regInfo[reg.Tag] = reg;
 
 	// For each trajectory
 	for (auto& t : trajectoryList)
 	{
-		// Update each path with striping
+		// Update each path
 		std::vector<path> newPaths;
 		for (auto& p : t.vecPath)
 		{
-			// Do not add striping
-			if (p.type != "hatch" || !regInfo.count(p.tag) || regInfo[p.tag][0] == 0.0)
+			// Only reorder hatches
+			if (p.type != "hatch")
 			{
 				newPaths.push_back(p);
 				continue;
 			}
 
-			double stripeWidth = regInfo[p.tag][0];
-			double scanAngle = std::fmod(regInfo[p.tag][1] + (layerNum - 1) * regInfo[p.tag][2], 360) * PI / 180;
-			std::array<double, 2> scanDir = { std::cos(scanAngle), std::sin(scanAngle) };
-			std::array<double, 2> stripeDir = { -scanDir[1], scanDir[0] };
-
-			std::vector<std::array<double, 2>> stripePts = calculateStripeLinePtsForRegion(bounds.at(p.tag), scanDir, stripeWidth);
-			
-			// Determine index of marks (paths with laser on) and jump profile being used in this region
-			std::vector<size_t> markInds;
+			// Get only marked segs (laser on) and jump profile
+			std::vector<segment> markedSegs;
 			std::string jumpProfile = "";
-			for (size_t i = 0; i < p.vecSg.size(); ++i)
+			for (auto& seg : p.vecSg)
 			{
-				if (p.vecSg[i].isMark)
-					markInds.push_back(i);
-				else if (jumpProfile.empty())
-					jumpProfile = p.vecSg[i].idSegStyl;
+				if (seg.isMark) markedSegs.push_back(seg);
+				else if (jumpProfile.empty()) jumpProfile = seg.idSegStyl;
 			}
 
-			// Split hatch paths by stripes
-			std::vector<std::vector<segment>> stripeSegs = splitHatchSegsByStripes(p.vecSg, markInds, stripePts, stripeDir, stripeWidth, scanDir);
+			// Group segs by sub-region in layer
+			std::vector<std::vector<segment>> groupedRegSegs; // <sub-region, segment>
+			if (regInfo[p.tag].scHatch == 2)
+				groupedRegSegs = groupSegmentsByRegions(layer, markedSegs);
+			else
+				groupedRegSegs = { markedSegs }; // No grouping
 
-			// Reorder and combine stripe segs into path segs
-			std::vector<segment> newSegs;
-			for (size_t i = 0; i < stripeSegs.size(); ++i)
+			// Apply striping, keeping sub-region grouping
+			double scanAngle = std::fmod(regInfo[p.tag].layer1hatchAngle + (layerNum - 1) * regInfo[p.tag].hatchLayerRotation, 360) * PI / 180;
+			std::vector<std::vector<std::vector<segment>>> stripedGroupedSegs; // <sub-region, stripe, segment>
+			for (auto& region : groupedRegSegs)
 			{
-				for (size_t j = 0; j < stripeSegs[i].size(); ++j)
-				{
-					// Add jump from prev seg and next seg
-					if (!newSegs.empty())
-					{
-						segment jumpSeg;
-						jumpSeg.isMark = 0;
-						jumpSeg.start = newSegs.back().end;
-						jumpSeg.end = stripeSegs[i][j].start;
-						jumpSeg.idSegStyl = jumpProfile;
-						newSegs.push_back(jumpSeg);
-					}
+				if (regInfo[p.tag].hatchStripeWidth == 0.0)
+					stripedGroupedSegs.push_back({ region }); // No striping
+				else
+					stripedGroupedSegs.push_back(splitSegmentsWithStripes(region, regInfo[p.tag].hatchStripeWidth, scanAngle, bounds.at(p.tag)));
+			}
 
-					newSegs.push_back(stripeSegs[i][j]);
+			// TODO: Apply additional optimization algorithms
+
+			// Update seg ordering for path
+			std::vector<segment> newSegs;
+			for (auto& region : stripedGroupedSegs)
+			{
+				for (auto& stripe : region)
+				{
+					for (auto& seg : stripe)
+					{
+						// Add jump from prev seg to current seg
+						if (!newSegs.empty())
+						{
+							segment jumpSeg;
+							jumpSeg.isMark = 0;
+							jumpSeg.start = newSegs.back().end;
+							jumpSeg.end = seg.start;
+							jumpSeg.idSegStyl = jumpProfile;
+							newSegs.push_back(jumpSeg);
+						}
+						newSegs.push_back(seg);
+					}
 				}
 			}
 
@@ -150,53 +159,24 @@ void addHatchStriping(const AMconfig& configData, const size_t& layerNum, std::v
 	}
 }
 
-std::vector<std::array<double, 2>> calculateStripeLinePtsForRegion(const std::array<double, 4>& regBound, const std::array<double, 2>& stripOffsetDir,
-																   const double& stripeWidth)
+std::vector<std::vector<segment>> splitSegmentsWithStripes(const std::vector<segment>& hatchSegs, const double& stripeWidth,
+														  const double& scanAngle,  const std::array<double, 4>& bound)
 {
-	// Determine which corners of bounding box to start and end at based on stripeOffsetDir
-	std::array<double, 2> startPt, endPt;
-	if (stripOffsetDir[0] >= 0)
-	{
-		startPt[0] = regBound[0];
-		endPt[0] = regBound[2];
-	}
-	else
-	{
-		startPt[0] = regBound[2];
-		endPt[0] = regBound[0];
-	}
-	if (stripOffsetDir[1] >= 0)
-	{
-		startPt[1] = regBound[1];
-		endPt[1] = regBound[3];
-	}
-	else
-	{
-		startPt[1] = regBound[3];
-		endPt[1] = regBound[1];
-	}
+	if (stripeWidth == 0.0)
+		return { hatchSegs };
 
-	// Determine points of stripe lines
-	double span = dotProduct(difference(endPt, startPt), stripOffsetDir);
-	std::vector<std::array<double, 2>> stripePts = { startPt };
-	double dist = 0;
-	while (true)
-	{
-		if (dist > span)
-			break;
+	std::array<double, 2> scanDir = { std::cos(scanAngle), std::sin(scanAngle) };
+	std::array<double, 2> stripeDir = { -scanDir[1], scanDir[0] };
 
-		dist += stripeWidth;
+	std::vector<std::array<double, 2>> stripePts = calculateStripeLinePtsForRegion(bound, scanDir, stripeWidth);
 
-		std::array<double, 2> p = sum(startPt, product(stripOffsetDir, dist));
-		stripePts.push_back(p);
-	}
-
-	return stripePts;
+	// Split hatch paths by stripes
+	return splitHatchSegsByStripes(hatchSegs, stripePts, stripeDir, stripeWidth, scanDir);
 }
 
-std::vector<std::vector<segment>> splitHatchSegsByStripes(const std::vector<segment>& hatchSegs, const std::vector<size_t>& markInds,
-														  const std::vector<std::array<double, 2>>& stripePts, const std::array<double,2>& stripeDir, 
-														  const double& stripeWidth, const std::array<double,2>& scanDir)
+std::vector<std::vector<segment>> splitHatchSegsByStripes(const std::vector<segment>& hatchSegs, 
+														  const std::vector<std::array<double, 2>>& stripePts, const std::array<double, 2>& stripeDir,
+														  const double& stripeWidth, const std::array<double, 2>& scanDir)
 {
 	std::vector<std::vector<segment>> stripeSegs; // <stripe, seg>
 	// Loop through stripes
@@ -205,11 +185,10 @@ std::vector<std::vector<segment>> splitHatchSegsByStripes(const std::vector<segm
 	{
 		std::vector<segment> segs;
 		const std::array<double, 2>& sPt1 = stripePts[i], sPt2 = stripePts[i + 1];
-		for (auto& mInd : markInds)
+		for (auto& s : hatchSegs)
 		{
-			const segment& oldSeg = hatchSegs[mInd];
-			std::array<double, 2> eStart = { oldSeg.start.x, oldSeg.start.y };
-			std::array<double, 2> eEnd = { oldSeg.end.x, oldSeg.end.y };
+			std::array<double, 2> eStart = { s.start.x, s.start.y };
+			std::array<double, 2> eEnd = { s.end.x, s.end.y };
 
 			// Determine if seg in scanDir or opposite
 			std::array<double, 2> segDir = difference(eEnd, eStart);
@@ -223,7 +202,7 @@ std::vector<std::vector<segment>> splitHatchSegsByStripes(const std::vector<segm
 			bool s1Inter = intersection(eStart, eEnd, sPt1, stripeDir, s1InterPt);
 			bool s2Inter = intersection(eStart, eEnd, sPt2, stripeDir, s2InterPt);
 
-			segment newSeg = oldSeg;
+			segment newSeg = s;
 			// Both intersect = path goes through stripe
 			if (s1Inter && s2Inter)
 			{
@@ -284,6 +263,135 @@ std::vector<std::vector<segment>> splitHatchSegsByStripes(const std::vector<segm
 		stripeSegs.push_back(segs);
 	}
 	return stripeSegs;
+}
+
+std::vector<std::array<double, 2>> calculateStripeLinePtsForRegion(const std::array<double, 4>& regBound, const std::array<double, 2>& stripOffsetDir,
+																   const double& stripeWidth)
+{
+	// Determine which corners of bounding box to start and end at based on stripeOffsetDir
+	std::array<double, 2> startPt, endPt;
+	if (stripOffsetDir[0] >= 0)
+	{
+		startPt[0] = regBound[0];
+		endPt[0] = regBound[2];
+	}
+	else
+	{
+		startPt[0] = regBound[2];
+		endPt[0] = regBound[0];
+	}
+	if (stripOffsetDir[1] >= 0)
+	{
+		startPt[1] = regBound[1];
+		endPt[1] = regBound[3];
+	}
+	else
+	{
+		startPt[1] = regBound[3];
+		endPt[1] = regBound[1];
+	}
+
+	// Determine points of stripe lines
+	double span = dotProduct(difference(endPt, startPt), stripOffsetDir);
+	std::vector<std::array<double, 2>> stripePts = { startPt };
+	double dist = 0;
+	while (true)
+	{
+		if (dist > span)
+			break;
+
+		dist += stripeWidth;
+
+		std::array<double, 2> p = sum(startPt, product(stripOffsetDir, dist));
+		stripePts.push_back(p);
+	}
+
+	return stripePts;
+}
+
+std::vector<std::vector<segment>> groupSegmentsByRegions(const layer& layer, const std::vector<segment>& segs)
+{
+	std::vector<segment> origPSegs = segs; // Original segs, get removed as they are paired with regions
+	std::vector<std::vector<segment>> regionSegs;
+	for (auto& r : layer.s.rList)
+	{
+		std::string rType = r.type;
+		std::transform(rType.begin(), rType.end(), rType.begin(), [](unsigned char c) { return std::tolower(c); });  // convert region type to lower case
+		if (rType == "outer")
+		{
+			// Get segs in this region
+			std::vector<segment> segs;
+			for (size_t i = 0; i < origPSegs.size(); ++i)
+			{
+				// Check if seg in region
+				if (isInside(r.eList, origPSegs[i].start))
+				{
+					segs.push_back(origPSegs[i]);
+					origPSegs.erase(origPSegs.begin() + i);
+					--i;
+				}
+			}
+			regionSegs.push_back(segs);
+		}
+	}
+	return regionSegs;
+}
+
+bool isInside(const std::vector<edge>& bound, const vertex& pt)
+{
+	size_t nCrosses = 0;
+	for (auto& e : bound)
+	{
+		std::array<double, 2> pt1 = { e.s.x, e.s.y };
+		std::array<double, 2> pt2 = { e.f.x, e.f.y };
+
+		bool x1LessThanX = pt1[0] <= pt.x;
+		bool y1LessThanY = pt1[1]<= pt.y;
+		bool x2LessThanX = pt2[0] <= pt.x;
+		bool y2LessThanY = pt2[1] <= pt.y;
+		if (y1LessThanY != y2LessThanY)
+		{
+			if (!x1LessThanX && !x2LessThanX)
+				nCrosses++;
+			else if (x1LessThanX != x2LessThanX)
+			{
+				std::array<double, 2> dir = difference(pt2, pt1);
+				dir = product(dir, 1 / magnitude(dir));
+				std::array<double, 2> v1 = difference({ pt.x, pt.y }, pt1);
+				std::array<double, 2> inter = sum(pt1, product(dir, dotProduct(v1, dir)));
+				if (inter[0] > pt.x)
+					nCrosses++;
+			}
+		}
+	}
+
+	return (fmod(nCrosses, 2) == 1);
+}
+
+
+void updateHatchSpacing(AMconfig& configData)
+{
+	for (auto& reg : configData.regionProfileList)
+	{
+		if (reg.resHatch == 0.0)
+		{
+			if (reg.hatchStyleIntID == -1) // Don't do hatches for this region
+				continue;
+
+			double energyDensity = 35;
+			double bedDrop = configData.layerThickness_mm;
+			double power = configData.segmentStyleList[reg.hatchStyleIntID - 1].leadLaser.power;
+			double velocity = configData.VPlist[configData.segmentStyleList[reg.hatchStyleIntID - 1].vpIntID - 1].velocity;
+			reg.resHatch = calculateHatchSpacing(energyDensity, power, velocity, bedDrop);
+		}
+	}
+}
+
+double calculateHatchSpacing(const double& energyDensity, const double& power, const double& velocity, const double& bedDrop)
+{
+	// Letenneur approach
+	// energyDensity = power / (velocity * spacing * bedDrop)
+	return power / (energyDensity * velocity * bedDrop);
 }
 
 }
