@@ -22,6 +22,7 @@ It is utilized by all three projects within the ALSAM3024 solution
 
 #include "errorChecks.h"
 #include "constants.h"
+#include <set>
 
 // Function to check configuration-file for errors.
 // Should be called after reading the file into an AMconfig structure.
@@ -109,12 +110,18 @@ void evaluateConfigFile(AMconfig &configData, errorCheckStructure &errorData)
 	//*** 6. Part checks:
 	//	(potential warning only) At least one part is present
 	//	all region profiles exist
+	//  unique region for each part
 	//	part files all end in .stl
 	//	x/y offsets are within reason
 	//	trajectory#'s are >0
 	std::vector<std::string> regionsUsedByParts;  // list of regions tags referenced by all parts
+	std::set<std::string> regionsUsedByPartsSet;  // set of regions tags referenced by all parts
 	for (int i = 0; i < configData.vF.size(); i++) {
 		regionsUsedByParts.push_back(configData.vF[i].Tag);
+		if (regionsUsedByPartsSet.count(configData.vF[i].Tag))
+			updateErrorResults(errorData, haltNow, "evaluateConfigFile", "At least one region is referenced for multiple parts on tab 6, including " + configData.vF[i].Tag, "", configData.configFilename, configData.configPath);
+		else
+			regionsUsedByPartsSet.insert(configData.vF[i].Tag);
 	}
 	missingItems = checkExistanceInList(RegionTags, regionsUsedByParts);
 	if (missingItems.size() > 0) {
