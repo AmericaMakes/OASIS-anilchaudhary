@@ -31,7 +31,7 @@ on the configuration file has already been performed)
 #include "errorChecks.h"
 #include "io_functions.h"
 
-int main()
+int main(int argc, char** argv)
 {
 	// createScanpaths.exe should be located in the same directory (the "executable folder") as genLayer.exe, genScan.exe and the slic3r folder.
 	// You can then create a shortcut to createScanpaths.exe and move that anywhere
@@ -47,9 +47,39 @@ int main()
 	GetCurrentDirectory(MAX_PATH, filePath);
 	std::string currentPath = &filePath[0];
 
-	// 2. Ask user to select a configuration file in this or another folder
+	// 2. If config file not provided, ask user to select a configuration file in this or another folder
 	//	this also sets the current directory to wherever the config file is located, so we saved the executable folder in currentPath, above
-	fileData configFileData = selectConfigFile();
+	fileData configFileData;
+	if (argc == 2)
+	{
+		std::string fullFilePath = argv[1];
+		size_t slashPos = fullFilePath.find_last_of("\\");
+		// Config file is in executable folder
+		if (slashPos == std::string::npos)
+		{
+			fullFilePath = currentPath + "\\" + fullFilePath;
+			size_t slashPos = fullFilePath.find_last_of("\\");			
+		}
+		size_t periodPos = fullFilePath.find_last_of(".");
+
+		configFileData.extension = fullFilePath.substr(periodPos + 1);
+		configFileData.filename = fullFilePath.substr(slashPos + 1);
+		configFileData.filenamePlusPath = fullFilePath;
+		configFileData.path = fullFilePath.substr(0, slashPos);
+
+		if (configFileData.extension != "xls") {
+			// not the right kind of file for configuration
+			configFileData.xlsFileSelected = false;
+			std::cout << "\n***You inputted something which is not a .xls file***\nThis is not an AmericaMakes configuration file ... cancelling execution\n";
+		}
+		else {
+			// .xls file selected
+			configFileData.xlsFileSelected = true;
+			std::cout << "Configuration file selected: " << fullFilePath << std::endl;
+		}
+	}
+	else
+		configFileData = selectConfigFile();
 	if (configFileData.xlsFileSelected != true) { 
 		system("pause");  // user either cancelled the selection or chose something other than a .xls file
 		return 1;
@@ -78,7 +108,12 @@ int main()
 	std::string folderStatus = evaluateProjectFolder(configData);
 
 	// 5. Ask user what operations to execute, based on whatever prior layer and/or scan folders exist in the project folder
-	std::string userChoice = getUserOption(configData, folderStatus);
+	//	  If config file was provided, default to doing both layer and scan generation and deleting any previous data
+	std::string userChoice;
+	if (argc == 2)
+		userChoice = "b";
+	else
+		userChoice = getUserOption(configData, folderStatus);
 	if (userChoice == "c") {
 		// user opts to cancel
 		std::cout << "Scanpath generation cancelled.  Any existing files will be left untouched\n";
