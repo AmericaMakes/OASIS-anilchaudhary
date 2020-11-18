@@ -133,6 +133,9 @@ struct regionProfile
 	double layer1hatchAngle = 0.0;	 // hatch angle to be used on layer 1 for this region
 	double hatchLayerRotation = 0.0; // incremental change in hatch angle (counter-clockwise) per layer
 	double hatchStripeWidth = 0.0; // hatch stripe width, in mm. 0.0 = no hatch striping
+	bool doMultiConnOpt = false;	// multiply-connected hatch optimization
+	bool doMultiConnSwitch = false;	// multiply-connected hatch switching
+	bool doUpskinToDownskin = false;	// upskin-to-downskin hatch reorientation
 };
 
 // Structure to hold definitions for trajectory processing (sequential or concurrent)

@@ -119,7 +119,7 @@ void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig&
 			// Group segs by sub-region in layer
 			// Multiply-connected optimization
 			std::vector<std::vector<segment>> groupedRegSegs; // <sub-region, segment>
-			if (regInfo[p.tag].scHatch == 2 || regInfo[p.tag].scHatch == 3 || regInfo[p.tag].scHatch == 4 || regInfo[p.tag].scHatch == 5)
+			if (regInfo[p.tag].doMultiConnOpt)
 				groupedRegSegs = groupSegmentsByRegions(layer, markedSegs);
 			else
 				groupedRegSegs = { markedSegs }; // No grouping
@@ -140,7 +140,7 @@ void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig&
 			double layerHeight = configData.layerThickness_mm * layerNum;
 			for (auto& region : stripedGroupedSegs)
 			{
-				if (regInfo[p.tag].scHatch == 3 || regInfo[p.tag].scHatch == 5)
+				if (regInfo[p.tag].doUpskinToDownskin)
 					newStripedGroupedSegs.push_back(reorientSegmentsUpToDownSkin(region, layerHeight, grids.at(p.tag).first, grids.at(p.tag).second));
 				else
 					newStripedGroupedSegs.push_back(region);
@@ -148,7 +148,7 @@ void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig&
 			stripedGroupedSegs = newStripedGroupedSegs;
 
 			// Apply multiply-connected switching algorithm
-			if (regInfo[p.tag].scHatch == 4 || regInfo[p.tag].scHatch == 5)
+			if (regInfo[p.tag].doMultiConnSwitch)
 				stripedGroupedSegs = reorderSegmentsForMultiplyConnectedSwitching(stripedGroupedSegs);
 
 			// Update seg ordering for path
