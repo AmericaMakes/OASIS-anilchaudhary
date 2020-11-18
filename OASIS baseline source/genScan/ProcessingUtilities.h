@@ -1,6 +1,10 @@
 #pragma once
 #include <array>
 #include "ScanPath.h"
+#include <vtkSmartPointer.h>
+
+class vtkUnstructuredGrid;
+class vtkCellLocator;
 
 namespace utils
 {
@@ -25,7 +29,8 @@ bool intersection(const std::array<double, 2>& segStart, const std::array<double
 
 
 void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig& configData, const layer& layer, const size_t& layerNum,
-						const std::map<std::string, std::array<double, 4>>& bounds);
+						const std::map<std::string, std::array<double, 4>>& bounds,
+						const std::map<std::string, std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>>>& grids);
 
 std::vector<std::vector<segment>> splitSegmentsWithStripes(const std::vector<segment>& hatchSegs, const double& stripeWidth,
 														   const double& scanAngle, const std::array<double, 4>& bound);
@@ -41,9 +46,13 @@ std::vector<std::vector<segment>> groupSegmentsByRegions(const layer& layer, con
 
 bool isInside(const std::vector<edge>& bound, const vertex& pt);
 
+std::vector<std::vector<segment>> reorientSegmentsUpToDownSkin(const std::vector<std::vector<segment>>& segs, const double& layerHeight,
+	const vtkSmartPointer<vtkUnstructuredGrid>& grid, const vtkSmartPointer<vtkCellLocator>& cellLocator);
 
-void updateHatchSpacing(AMconfig& configData);
+double calculateSkinAngle(const std::array<double, 3>& pt, const vtkSmartPointer<vtkUnstructuredGrid>& grid,
+	const vtkSmartPointer<vtkCellLocator>& cellLocator);
 
-double calculateHatchSpacing(const double& energyDensity, const double& power, const double& velocity, const double& bedDrop);
+std::vector<std::vector<segment>> reorderSegmentsForMultiplyConnectedSwitching(const std::vector<std::vector<segment>>& segs, const double& layerHeight,
+	const vtkSmartPointer<vtkUnstructuredGrid>& grid, const vtkSmartPointer<vtkCellLocator>& cellLocator);
 
 }

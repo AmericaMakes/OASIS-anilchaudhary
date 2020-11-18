@@ -15,6 +15,14 @@
 #include "errorChecks.h"
 #include "io_functions.h"
 
+// VTK functions
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkCellLocator.h>
+#include <vtkCellData.h>
+#include <vtkGenericCell.h>
+#include <vtkMath.h>
+
 namespace utils
 {
 
@@ -77,7 +85,8 @@ bool intersection(const std::array<double, 2>& segStart, const std::array<double
 
 
 void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig& configData, const layer& layer, const size_t& layerNum,
-						const std::map<std::string, std::array<double, 4>>& bounds)
+						const std::map<std::string, std::array<double, 4>>& bounds,
+						const std::map<std::string, std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>>>& grids)
 {
 	// Create mapping of region names to region profiles
 	std::map<std::string, regionProfile> regInfo; // <regionTag, region>
@@ -108,8 +117,9 @@ void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig&
 			}
 
 			// Group segs by sub-region in layer
+			// Multiply-connected optimization
 			std::vector<std::vector<segment>> groupedRegSegs; // <sub-region, segment>
-			if (regInfo[p.tag].scHatch == 2)
+			if (regInfo[p.tag].scHatch == 2 || regInfo[p.tag].scHatch == 3 || regInfo[p.tag].scHatch == 4 || regInfo[p.tag].scHatch == 5)
 				groupedRegSegs = groupSegmentsByRegions(layer, markedSegs);
 			else
 				groupedRegSegs = { markedSegs }; // No grouping
@@ -125,7 +135,21 @@ void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig&
 					stripedGroupedSegs.push_back(splitSegmentsWithStripes(region, regInfo[p.tag].hatchStripeWidth, scanAngle, bounds.at(p.tag)));
 			}
 
-			// TODO: Apply additional optimization algorithms
+			// Apply upskin to downskin orientating
+			std::vector<std::vector<std::vector<segment>>> newStripedGroupedSegs;			
+			double layerHeight = configData.layerThickness_mm * layerNum;
+			for (auto& region : stripedGroupedSegs)
+			{
+				if (regInfo[p.tag].scHatch == 3 || regInfo[p.tag].scHatch == 5)
+					newStripedGroupedSegs.push_back(reorientSegmentsUpToDownSkin(region, layerHeight, grids.at(p.tag).first, grids.at(p.tag).second));
+				else
+					newStripedGroupedSegs.push_back(region);
+			}
+			stripedGroupedSegs = newStripedGroupedSegs;
+
+			// Apply multiply-connected switching algorithm
+			if (regInfo[p.tag].scHatch == 4 || regInfo[p.tag].scHatch == 5)
+				stripedGroupedSegs = reorderSegmentsForMultiplyConnectedSwitching(stripedGroupedSegs);
 
 			// Update seg ordering for path
 			std::vector<segment> newSegs;
@@ -319,11 +343,11 @@ std::vector<std::vector<segment>> groupSegmentsByRegions(const layer& layer, con
 		std::transform(rType.begin(), rType.end(), rType.begin(), [](unsigned char c) { return std::tolower(c); });  // convert region type to lower case
 		if (rType == "outer")
 		{
-			// Get segs in this region
+			// Get segs in this sub-region
 			std::vector<segment> segs;
 			for (size_t i = 0; i < origPSegs.size(); ++i)
 			{
-				// Check if seg in region
+				// Check if seg in sub-region
 				if (isInside(r.eList, origPSegs[i].start))
 				{
 					segs.push_back(origPSegs[i]);
@@ -369,29 +393,61 @@ bool isInside(const std::vector<edge>& bound, const vertex& pt)
 }
 
 
-void updateHatchSpacing(AMconfig& configData)
+std::vector<std::vector<segment>> reorientSegmentsUpToDownSkin(const std::vector<std::vector<segment>>& segs, const double& layerHeight,
+	const vtkSmartPointer<vtkUnstructuredGrid>& grid, const vtkSmartPointer<vtkCellLocator>& cellLocator)
 {
-	for (auto& reg : configData.regionProfileList)
+	std::vector<std::vector<segment>> newAllSegs;
+	for (auto& group : segs)
 	{
-		if (reg.resHatch == 0.0)
+		std::vector<segment> newSegs;
+		for (auto& s : group)
 		{
-			if (reg.hatchStyleIntID == -1) // Don't do hatches for this region
-				continue;
-
-			double energyDensity = 35;
-			double bedDrop = configData.layerThickness_mm;
-			double power = configData.segmentStyleList[reg.hatchStyleIntID - 1].leadLaser.power;
-			double velocity = configData.VPlist[configData.segmentStyleList[reg.hatchStyleIntID - 1].vpIntID - 1].velocity;
-			reg.resHatch = calculateHatchSpacing(energyDensity, power, velocity, bedDrop);
+			segment newSeg = s;
+			double startSkinAngle = calculateSkinAngle({ s.start.x, s.start.y, layerHeight }, grid, cellLocator);
+			double endSkinAngle = calculateSkinAngle({ s.end.x, s.end.y, layerHeight }, grid, cellLocator);
+			if (endSkinAngle > startSkinAngle) // end is more upskin
+			{
+				vertex tmp = newSeg.end;
+				newSeg.end = newSeg.start;
+				newSeg.start = tmp;
+			}
+			newSegs.push_back(newSeg);
 		}
+		newAllSegs.push_back(newSegs);
 	}
+	return newAllSegs;
 }
 
-double calculateHatchSpacing(const double& energyDensity, const double& power, const double& velocity, const double& bedDrop)
+double calculateSkinAngle(const std::array<double, 3>& pt, const vtkSmartPointer<vtkUnstructuredGrid>& grid, 
+						  const vtkSmartPointer<vtkCellLocator>& cellLocator)
 {
-	// Letenneur approach
-	// energyDensity = power / (velocity * spacing * bedDrop)
-	return power / (energyDensity * velocity * bedDrop);
+	// Get nearest face to point
+	vtkSmartPointer<vtkGenericCell> cacheCell = vtkSmartPointer<vtkGenericCell>::New(); //create one per thread
+	double p[3]; p[0] = pt[0]; p[1] = pt[1]; p[2] = pt[2];
+	double closestPoint[3];
+	double closestPointDist2;
+	vtkIdType cellId;
+	int subId;
+	cellLocator->FindClosestPoint(p, closestPoint, cacheCell, cellId, subId, closestPointDist2);
+
+	// Determine face's normal
+	vtkSmartPointer<vtkDataArray> normalData = grid->GetCellData()->GetArray("Normals");
+	std::array<double, 3> fNorm = { 0,0,0 };
+	normalData->GetTuple(cellId, fNorm.data());
+
+	// Calculate angle between face and point's layer using face normals
+	double lNorm[3] = { 0.0, 0.0, 1.0 };
+	double angle = vtkMath::DegreesFromRadians(vtkMath::AngleBetweenVectors(fNorm.data(), lNorm));
+	double zDir = fNorm[2];
+	if ((zDir > 0 && angle < 90) || (zDir < 0 && angle > 90))
+		angle = 180 - angle;
+	return angle;
+}
+
+std::vector<std::vector<std::vector<segment>>> reorderSegmentsForMultiplyConnectedSwitching(const std::vector<std::vector<std::vector<segment>>>& segs)
+{
+	std::vector<segment> reorderedSegs;
+	return { {reorderedSegs} };
 }
 
 }
