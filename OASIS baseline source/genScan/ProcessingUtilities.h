@@ -52,7 +52,6 @@ std::vector<std::vector<segment>> reorientSegmentsUpToDownSkin(const std::vector
 double calculateSkinAngle(const std::array<double, 3>& pt, const vtkSmartPointer<vtkUnstructuredGrid>& grid,
 	const vtkSmartPointer<vtkCellLocator>& cellLocator);
 
-std::vector<std::vector<segment>> reorderSegmentsForMultiplyConnectedSwitching(const std::vector<std::vector<segment>>& segs, const double& layerHeight,
-	const vtkSmartPointer<vtkUnstructuredGrid>& grid, const vtkSmartPointer<vtkCellLocator>& cellLocator);
+std::vector<std::vector<std::vector<segment>>> reorderSegmentsForMultiplyConnectedSwitching(const std::vector<std::vector<std::vector<segment>>>& segs);
 
 }

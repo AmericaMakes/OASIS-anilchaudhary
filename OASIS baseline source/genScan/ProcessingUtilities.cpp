@@ -446,7 +446,31 @@ double calculateSkinAngle(const std::array<double, 3>& pt, const vtkSmartPointer
 
 std::vector<std::vector<std::vector<segment>>> reorderSegmentsForMultiplyConnectedSwitching(const std::vector<std::vector<std::vector<segment>>>& segs)
 {
+	std::vector<std::vector<segment>> regionAllSegs;
+	size_t maxSegsInRegion = 0;
+	for (auto& group : segs)
+	{
+		std::vector<segment> regSegs;
+		for (auto& stripe : group)
+		{
+			for (auto& s : stripe)
+				regSegs.push_back(s);
+		}
+		regionAllSegs.push_back(regSegs);
+		if (regSegs.size() > maxSegsInRegion)
+			maxSegsInRegion = regSegs.size();
+	}
+
 	std::vector<segment> reorderedSegs;
+	for (size_t i = 0; i < maxSegsInRegion; ++i)
+	{
+		for (size_t j = 0; j < regionAllSegs.size(); ++j)
+		{
+			if (regionAllSegs[j].size() > i)
+				reorderedSegs.push_back(regionAllSegs[j][i]);
+		}
+	}
+
 	return { {reorderedSegs} };
 }
 
