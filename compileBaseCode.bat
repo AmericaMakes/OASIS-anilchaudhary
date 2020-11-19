@@ -19,11 +19,11 @@ TITLE OASIS Challenge Baseline File Compilation
 ECHO ***OASIS Challenge Baseline File Compilation***
 
 REM Start msbuild tools by assuming default location and x64 configuration
-call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\"vcvarsall.bat x64
+REM call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\"vcvarsall.bat x64
 
 REM Change to solution folder input by user
 REM use %~f1 to extract the full path from parameter #1, or %1 to use it as-is
 CD %1
 
 REM Compile the solution
-msbuild OASIS_baseline.sln /property:Configuration=Release /property:Platform=x64
+C:\BuildTools\MSBuild\Current\Bin\msbuild OASIS_baseline.sln /property:Configuration=Debug /property:Platform=x64
