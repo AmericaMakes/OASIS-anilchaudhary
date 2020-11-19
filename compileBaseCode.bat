@@ -26,4 +26,4 @@ REM use %~f1 to extract the full path from parameter #1, or %1 to use it as-is
 CD %1
 
 REM Compile the solution
-C:\BuildTools\MSBuild\Current\Bin\msbuild OASIS_baseline.sln /property:Configuration=Debug /property:Platform=x64
+C:\BuildTools\MSBuild\Current\Bin\msbuild "OASIS baseline source/OASIS_baseline.sln" /property:Configuration=Release /property:Platform=x64
