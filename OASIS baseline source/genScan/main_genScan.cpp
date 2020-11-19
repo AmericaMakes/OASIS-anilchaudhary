@@ -42,15 +42,7 @@ from the configuration files.
 #include "errorChecks.h"
 #include "io_functions.h"
 #include "ProcessingUtilities.h"
-
-#include <vtkSTLReader.h>
-#include <vtkCleanPolyData.h>
-#include <vtkPolyDataNormals.h>
-#include <vtkAppendfilter.h>
-#include <vtkCellLocator.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkTransform.h>
-#include <vtkTransformPolyDataFilter.h>
+#include "stl_reader.h"
 
 constexpr auto DISPLAYLAYER = 0;
 constexpr auto DISPLAYSCANPATH = 0;
@@ -99,10 +91,7 @@ void clearVars(layer* L, trajectory* T, path* tempPath)
 std::map<std::string, std::array<double, 4>> determineRegionBounds(const std::vector<std::string>& regionTags, const std::string xmlLayerDir,
 																   AMconfig& configData, errorCheckStructure& errorData);
 
-std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>> readSTL(const std::string& file, const double& xTrans,
-																						 const double& yTrans, const double& zTrans);
-
-std::map<std::string, std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>>> loadParts(const AMconfig& configData);
+std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double,3>>> loadRegionMeshes(const AMconfig& configData);
 
 int main(int argc, char **argv)
 // Required argument for genScan.exe:
@@ -224,9 +213,8 @@ int main(int argc, char **argv)
 	for (int r = 0; r < configData.regionProfileList.size(); r++)
 	{	tagList.push_back(configData.regionProfileList[r].Tag);	}
 
-	// Create grids from every part STL and create cell locators for each
-	// TODO: Ensure that each region profile matches only one part
-	std::map<std::string, std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>>> grids = loadParts(configData); // <region name, <grid, cellLocator>>
+	// Load every part STL and map them to regions
+	std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>> regionMeshes = loadRegionMeshes(configData); // <region name, <stl mesh, translation>>
 
 	// Determine bounding box around each region
 	std::map<std::string, std::array<double, 4>> bounds = determineRegionBounds(tagList, xmlFolder, configData, errorData);
@@ -448,7 +436,7 @@ int main(int argc, char **argv)
 				#endif
 
 				// Post-Processing Options
-				utils::updateTrajectories(trajectoryList, configData, L, i, bounds, grids);
+				utils::updateTrajectories(trajectoryList, configData, L, i, bounds, regionMeshes);
 
 				// write the XML schema to a DOM and then to a file
 				std::string fullXMLpath = configData.scanOutputFolder + "\\XMLdir\\" + xfn;
@@ -542,56 +530,14 @@ std::map<std::string, std::array<double, 4>> determineRegionBounds(const std::ve
 	return bounds;
 }
 
-std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>> readSTL(const std::string& file, const double& xTrans, 
-																						 const double& yTrans, const double& zTrans)
+std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>> loadRegionMeshes(const AMconfig& configData)
 {
-	
-	auto stlReader = vtkSmartPointer<vtkSTLReader>::New();
-	stlReader->SetFileName(file.c_str());
-	stlReader->Update();
-
-	auto cleanfilter = vtkSmartPointer<vtkCleanPolyData>::New();
-	cleanfilter->SetInputConnection(stlReader->GetOutputPort());
-	cleanfilter->Update();
-	
-	// Apply translation
-	vtkSmartPointer<vtkTransform> translation = vtkSmartPointer<vtkTransform>::New();
-	translation->Translate(xTrans, yTrans, zTrans);
-	vtkSmartPointer<vtkTransformPolyDataFilter> transformFilter = vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-	transformFilter->SetInputConnection(cleanfilter->GetOutputPort());
-	transformFilter->SetTransform(translation);
-	transformFilter->Update();
-
-	vtkSmartPointer<vtkPolyData> surfMesh = transformFilter->GetOutput();
-
-	// Generate normals
-	auto normalGenerator = vtkSmartPointer<vtkPolyDataNormals>::New();
-	normalGenerator->SetInputData(surfMesh);
-	normalGenerator->ComputePointNormalsOff();
-	normalGenerator->ComputeCellNormalsOn();
-	normalGenerator->Update();
-	surfMesh = normalGenerator->GetOutput();
-
-	// Create grid
-	vtkSmartPointer<vtkAppendFilter> appendFilter = vtkSmartPointer<vtkAppendFilter>::New();
-	appendFilter->AddInputData(surfMesh);
-	appendFilter->Update();
-	vtkSmartPointer<vtkUnstructuredGrid> grid = appendFilter->GetOutput();
-
-	// Create search tree
-	vtkSmartPointer<vtkCellLocator> cellLocator = vtkSmartPointer<vtkCellLocator>::New();
-	cellLocator->SetDataSet(surfMesh);
-	cellLocator->BuildLocator();
-
-	return std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>>(grid, cellLocator);
-}
-
-std::map<std::string, std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>>> loadParts(const AMconfig& configData)
-{
-	std::map<std::string, std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>>> grids;
+	std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>> meshes; // <region name, <stl mesh, translation>>
 
 	for (auto& part : configData.vF)
-		grids[part.Tag] = readSTL(part.fn, part.x_offset, part.y_offset, part.z_offset);
+	{
+		meshes[part.Tag] = { stl_reader::StlMesh<double, size_t>(part.fn), {part.x_offset, part.y_offset, part.z_offset} };
+	}
 
-	return grids;
+	return meshes;
 }

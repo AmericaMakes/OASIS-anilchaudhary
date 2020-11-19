@@ -15,14 +15,6 @@
 #include "errorChecks.h"
 #include "io_functions.h"
 
-// VTK functions
-#include <vtkSmartPointer.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkCellLocator.h>
-#include <vtkCellData.h>
-#include <vtkGenericCell.h>
-#include <vtkMath.h>
-
 namespace utils
 {
 
@@ -83,10 +75,66 @@ bool intersection(const std::array<double, 2>& segStart, const std::array<double
 	return false;
 }
 
+std::array<double, 3> crossProduct(const std::array<double, 3>& v1, const std::array<double, 3>& v2)
+{
+	return { v1[1] * v2[2] - v1[2] * v2[1], v1[2] * v2[0] - v1[0] * v2[2], v1[0] * v2[1] - v1[1] * v2[0] };
+}
+
+std::array<double, 3> sum(const std::array<double, 3>& v1, const std::array<double, 3>& v2)
+{
+	return { v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2] };
+}
+
+std::array<double, 3> difference(const std::array<double, 3>& v1, const std::array<double, 3>& v2)
+{
+	return { v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2] };
+}
+
+std::array<double, 3> product(const std::array<double, 3>& v, double s)
+{
+	return { v[0] * s, v[1] * s, v[2] * s };
+}
+
+double magnitude(const std::array<double, 3>& v)
+{
+	return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
+
+double dotProduct(const std::array<double, 3>& v1, const std::array<double, 3>& v2)
+{
+	return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+}
+
+double angleBetween(const std::array<double, 3>& v1, const std::array<double, 3>& v2)
+{
+	std::array<double, 3> cross = crossProduct(v1, v2);
+	double angle = std::atan2(magnitude(cross), dotProduct(v1, v2));
+	return angle * 180 / PI;
+}
+
+double distance(const std::array<double, 3>& pt, const std::array<double, 3>& lineStartPt, const std::array<double, 3>& lineEndPt, std::array<double,3>& closestPt)
+{
+	std::array<double, 3> SP = difference(pt, lineStartPt), SE = difference(lineEndPt, lineStartPt);
+	double len = magnitude(SE);
+	double dist = dotProduct(SP, SE) / len; // dist = |SP|cos(theta) [SP projected distance on SE]
+	double normDist = dist / len; // normalized the projected distance
+
+	// projection < 0 is before the start point
+	// projection > 1 is after the end point
+	// all other projections is percentage between start and end
+	if (normDist < 0)
+		closestPt = lineStartPt;
+	else if (normDist > 1.0)
+		closestPt = lineEndPt;
+	else
+		closestPt = sum(lineStartPt, product(SE, normDist));
+
+	return magnitude(difference(pt, closestPt));
+}
 
 void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig& configData, const layer& layer, const size_t& layerNum,
 						const std::map<std::string, std::array<double, 4>>& bounds,
-						const std::map<std::string, std::pair<vtkSmartPointer<vtkUnstructuredGrid>, vtkSmartPointer<vtkCellLocator>>>& grids)
+						const std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>>& regionMeshes)
 {
 	// Create mapping of region names to region profiles
 	std::map<std::string, regionProfile> regInfo; // <regionTag, region>
@@ -141,7 +189,7 @@ void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig&
 			for (auto& region : stripedGroupedSegs)
 			{
 				if (regInfo[p.tag].doUpskinToDownskin)
-					newStripedGroupedSegs.push_back(reorientSegmentsUpToDownSkin(region, layerHeight, grids.at(p.tag).first, grids.at(p.tag).second));
+					newStripedGroupedSegs.push_back(reorientSegmentsUpToDownSkin(region, layerHeight, regionMeshes.at(p.tag).first, regionMeshes.at(p.tag).second));
 				else
 					newStripedGroupedSegs.push_back(region);
 			}
@@ -394,7 +442,7 @@ bool isInside(const std::vector<edge>& bound, const vertex& pt)
 
 
 std::vector<std::vector<segment>> reorientSegmentsUpToDownSkin(const std::vector<std::vector<segment>>& segs, const double& layerHeight,
-	const vtkSmartPointer<vtkUnstructuredGrid>& grid, const vtkSmartPointer<vtkCellLocator>& cellLocator)
+															   const stl_reader::StlMesh<double, size_t>& regionMesh, const std::array<double, 3>& regionTrans)
 {
 	std::vector<std::vector<segment>> newAllSegs;
 	for (auto& group : segs)
@@ -403,8 +451,8 @@ std::vector<std::vector<segment>> reorientSegmentsUpToDownSkin(const std::vector
 		for (auto& s : group)
 		{
 			segment newSeg = s;
-			double startSkinAngle = calculateSkinAngle({ s.start.x, s.start.y, layerHeight }, grid, cellLocator);
-			double endSkinAngle = calculateSkinAngle({ s.end.x, s.end.y, layerHeight }, grid, cellLocator);
+			double startSkinAngle = calculateSkinAngle({ s.start.x, s.start.y, layerHeight }, regionMesh, regionTrans);
+			double endSkinAngle = calculateSkinAngle({ s.end.x, s.end.y, layerHeight }, regionMesh, regionTrans);
 			if (endSkinAngle > startSkinAngle) // end is more upskin
 			{
 				vertex tmp = newSeg.end;
@@ -418,30 +466,87 @@ std::vector<std::vector<segment>> reorientSegmentsUpToDownSkin(const std::vector
 	return newAllSegs;
 }
 
-double calculateSkinAngle(const std::array<double, 3>& pt, const vtkSmartPointer<vtkUnstructuredGrid>& grid, 
-						  const vtkSmartPointer<vtkCellLocator>& cellLocator)
+double calculateSkinAngle(const std::array<double, 3>& pt, const stl_reader::StlMesh<double, size_t>& regionMesh, 
+						  const std::array<double, 3>& regionTrans)
 {
 	// Get nearest face to point
-	vtkSmartPointer<vtkGenericCell> cacheCell = vtkSmartPointer<vtkGenericCell>::New(); //create one per thread
-	double p[3]; p[0] = pt[0]; p[1] = pt[1]; p[2] = pt[2];
-	double closestPoint[3];
-	double closestPointDist2;
-	vtkIdType cellId;
-	int subId;
-	cellLocator->FindClosestPoint(p, closestPoint, cacheCell, cellId, subId, closestPointDist2);
+	std::array<double,3> tPt = { pt[0] - regionTrans[0], pt[1] - regionTrans[1], pt[2] - regionTrans[2] };
+	size_t fInd = 0;
+	double minDist = DBL_MAX;
+	for (size_t i = 0; i < regionMesh.num_tris(); ++i)
+	{
+		// Determine distance from point to triangle
+		std::array<double, 3> c1Pt = { regionMesh.tri_corner_coords(i,0)[0], regionMesh.tri_corner_coords(i,0)[1], regionMesh.tri_corner_coords(i,0)[2] };
+		std::array<double, 3> c2Pt = { regionMesh.tri_corner_coords(i,1)[0], regionMesh.tri_corner_coords(i,1)[1], regionMesh.tri_corner_coords(i,1)[2] };
+		std::array<double, 3> c3Pt = { regionMesh.tri_corner_coords(i,2)[0], regionMesh.tri_corner_coords(i,2)[1], regionMesh.tri_corner_coords(i,2)[2] };
+		std::array<double, 3> norm = { regionMesh.tri_normal(i)[0], regionMesh.tri_normal(i)[1], regionMesh.tri_normal(i)[2] };
+		double dist = calculateDistFromPtToTriangle(tPt, c1Pt, c2Pt, c3Pt, norm); 
+		if (dist < minDist)
+		{
+			minDist = dist;
+			fInd = i;
+		}
+	}
 
-	// Determine face's normal
-	vtkSmartPointer<vtkDataArray> normalData = grid->GetCellData()->GetArray("Normals");
-	std::array<double, 3> fNorm = { 0,0,0 };
-	normalData->GetTuple(cellId, fNorm.data());
+	// Get face's normal
+	std::array<double, 3> fNorm = { regionMesh.tri_normal(fInd)[0], regionMesh.tri_normal(fInd)[1], regionMesh.tri_normal(fInd)[2] };
 
 	// Calculate angle between face and point's layer using face normals
-	double lNorm[3] = { 0.0, 0.0, 1.0 };
-	double angle = vtkMath::DegreesFromRadians(vtkMath::AngleBetweenVectors(fNorm.data(), lNorm));
+	std::array<double, 3> lNorm = { 0.0, 0.0, 1.0 };
+	double angle = angleBetween(fNorm, lNorm);
 	double zDir = fNorm[2];
 	if ((zDir > 0 && angle < 90) || (zDir < 0 && angle > 90))
 		angle = 180 - angle;
 	return angle;
+}
+
+double calculateDistFromPtToTriangle(const std::array<double, 3>& pt, const std::array<double, 3>& triPt1, const std::array<double, 3>& triPt2,
+									 const std::array<double, 3>& triPt3, const std::array<double, 3>& triNorm)
+{
+	// Project point onto triangle's plane
+	double distFromPtToPlane = dotProduct(triNorm, difference(pt, triPt1));
+	std::array<double, 3> projPt = sum(pt, product(product(triNorm, -1), distFromPtToPlane));
+
+	// Check if projected point is in triangle using barycentric point
+	std::array<double, 3> v1 = difference(triPt3, triPt1), 
+						  v2 = difference(triPt2, triPt1), 
+						  v3 = difference(projPt, triPt1);
+	double dot11 = dotProduct(v1, v1), 
+		   dot12 = dotProduct(v1, v2), 
+		   dot13 = dotProduct(v1, v3), 
+		   dot22 = dotProduct(v2, v2), 
+		   dot23 = dotProduct(v2, v3);
+	double invDenom = 1 / (dot11 * dot22 - dot12 * dot12);
+	double u = (dot22 * dot13 - dot12 * dot23) * invDenom;
+	double v = (dot11 * dot23 - dot12 * dot13) * invDenom;
+
+	bool isInside = ((u >= 0) && (v >= 0) && (u + v < 1));
+
+	// If projected point is inside triangle, then it is the closest point
+	if (isInside)
+		return magnitude(difference(pt, projPt));
+	// Otherwise, get closest point on triangle edges
+	double edgeDist = DBL_MAX;
+	std::array<double, 3> closeEdgePt, closePt;
+	double e1Dist = distance(projPt, triPt1, triPt2, closePt);
+	if (e1Dist < edgeDist)
+	{
+		edgeDist = e1Dist;
+		closeEdgePt = closePt;
+	}
+	double e2Dist = distance(projPt, triPt2, triPt3, closePt);
+	if (e2Dist < edgeDist)
+	{
+		edgeDist = e2Dist;
+		closeEdgePt = closePt;
+	}
+	double e3Dist = distance(projPt, triPt3, triPt1, closePt);
+	if (e3Dist < edgeDist)
+	{
+		edgeDist = e3Dist;
+		closeEdgePt = closePt;
+	}
+	return magnitude(difference(pt, closeEdgePt));
 }
 
 std::vector<std::vector<std::vector<segment>>> reorderSegmentsForMultiplyConnectedSwitching(const std::vector<std::vector<std::vector<segment>>>& segs)
