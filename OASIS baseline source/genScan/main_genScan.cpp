@@ -88,8 +88,7 @@ void clearVars(layer* L, trajectory* T, path* tempPath)
 	(*tempPath).vecSg.shrink_to_fit();
 }
 
-std::map<std::string, std::array<double, 4>> determineRegionBounds(const std::vector<std::string>& regionTags, const std::string xmlLayerDir,
-																   AMconfig& configData, errorCheckStructure& errorData);
+std::map<std::string, std::array<double, 4>> determineRegionBounds(const std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>>& regionMeshes);
 
 std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double,3>>> loadRegionMeshes(const AMconfig& configData);
 
@@ -217,7 +216,7 @@ int main(int argc, char **argv)
 	std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>> regionMeshes = loadRegionMeshes(configData); // <region name, <stl mesh, translation>>
 
 	// Determine bounding box around each region
-	std::map<std::string, std::array<double, 4>> bounds = determineRegionBounds(tagList, xmlFolder, configData, errorData);
+	std::map<std::string, std::array<double, 4>> bounds = determineRegionBounds(regionMeshes);
 
 	// set up variables for cursor control
 	COORD cursorPosition;
@@ -474,62 +473,6 @@ CleanUp:
 	return 0;
 };
 
-std::map<std::string, std::array<double, 4>> determineRegionBounds(const std::vector<std::string>& regionTags, const std::string xmlLayerDir,
-																   AMconfig& configData, errorCheckStructure& errorData)
-{
-	std::map<std::string, std::array<double, 4>> bounds; // <regionTag, {xMin, yMin, xMax, yMax}>
-	for (auto& reg : regionTags)
-		bounds[reg] = { DBL_MAX, DBL_MAX, -DBL_MAX, -DBL_MAX };
-
-	layer L;
-	std::string file;
-	HRESULT hr = CoInitialize(NULL);  // attempt to set up the output Domain Object Model (DOM).  If this fails, we can't create XML
-	int bCont = 1;
-	if (SUCCEEDED(hr))
-	{
-		for (auto& p : std::filesystem::directory_iterator(xmlLayerDir))
-		{
-			if ((p.path().extension() == ".xml") && (p.path().stem().string().substr(0, 6) == "layer_") && has_only_digits(p.path().stem().string().substr(6, 12).c_str()))
-			{
-				file = p.path().string();
-				//read the XML layer file
-				std::wstring wfn(file.begin(), file.end());
-				LPCWSTR  wszValue = wfn.c_str();
-				int fn_err = loadDOM(wszValue);
-				if (fn_err != 0)
-				{
-					// could not load a particular layer file
-					std::string errorMsg = "Could not load " + p.path().string() + "\n";
-					updateErrorResults(errorData, true, "loadDOM", errorMsg, "", configData.configFilename, configData.configPath);
-					bCont = 0;
-				}
-				if (bCont)
-				{
-					// convert the data in xml file to appropriate data structure
-					L = traverseDOM();
-					int verifyResult = verifyLayerStructure(configData, p.path().string(), L, regionTags);  // check that the layer is valid.  If not, function will end genScan execution
-
-					// Loop through regions in layer
-					for (auto& r : L.s.rList)
-					{
-						// Loop through edges in region
-						for (auto& e : r.eList)
-						{
-							// Note: End of this edge will be start of next edge
-							if (e.s.x < bounds[r.tag][0]) bounds[r.tag][0] = e.s.x;
-							if (e.s.x > bounds[r.tag][2]) bounds[r.tag][2] = e.s.x;
-							if (e.s.y < bounds[r.tag][1]) bounds[r.tag][1] = e.s.y;
-							if (e.s.y > bounds[r.tag][3]) bounds[r.tag][3] = e.s.y;
-						}
-					}
-				}
-			}
-		}
-	}
-	CoUninitialize();  // release the Domain Object Model
-	return bounds;
-}
-
 std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>> loadRegionMeshes(const AMconfig& configData)
 {
 	std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>> meshes; // <region name, <stl mesh, translation>>
@@ -540,4 +483,31 @@ std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<
 	}
 
 	return meshes;
+}
+
+std::map<std::string, std::array<double, 4>> determineRegionBounds(const std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>>& regionMeshes)
+{
+	std::map<std::string, std::array<double, 4>> bounds; // <regionTag, {xMin, yMin, xMax, yMax}>
+
+	for (const auto& reg : regionMeshes)
+	{
+		std::array<double, 4> bound = { DBL_MAX, DBL_MAX, -DBL_MAX, -DBL_MAX };
+
+		const stl_reader::StlMesh<double, size_t>& regionMesh = reg.second.first;
+
+		for (size_t i = 0; i < regionMesh.num_tris(); ++i)
+		{
+			for (size_t j = 0; j < 3; ++j)
+			{
+				std::array<double, 2> pt = { regionMesh.tri_corner_coords(i,j)[0], regionMesh.tri_corner_coords(i,j)[1] };
+				if (pt[0] < bound[0]) bound[0] = pt[0];
+				if (pt[0] > bound[2]) bound[2] = pt[0];
+				if (pt[1] < bound[1]) bound[1] = pt[1];
+				if (pt[1] > bound[3]) bound[3] = pt[1];				
+			}
+		}
+
+		bounds[reg.first] = bound;
+	}
+	return bounds;
 }
