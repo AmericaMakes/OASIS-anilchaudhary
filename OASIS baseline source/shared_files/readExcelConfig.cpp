@@ -330,13 +330,10 @@ void readRegionProfiles(BasicExcelWorksheet* sheet5, AMconfig* configData, std::
 		regionRow.layer1hatchAngle = sheet5->Cell(rowNum, 12)->GetDouble();
 		regionRow.hatchLayerRotation = sheet5->Cell(rowNum, 13)->GetDouble();
 		regionRow.hatchStripeWidth = sheet5->Cell(rowNum, 15)->GetDouble();
-		if (sheet5->Cell(rowNum, 16)->GetInteger() == 1) regionRow.doMultiConnOpt = true;
-		if (sheet5->Cell(rowNum, 17)->GetInteger() == 1)
-		{
-			regionRow.doMultiConnSwitch = true;
-			regionRow.doMultiConnOpt = true;
-		}
-		if (sheet5->Cell(rowNum, 18)->GetInteger() == 1) regionRow.doUpskinToDownskin = true;
+		regionRow.doMultiConnOpt = sheet5->Cell(rowNum, 16)->GetInteger() == 1;
+		regionRow.doMultiConnSwitch = sheet5->Cell(rowNum, 17)->GetInteger() == 1;
+		regionRow.doUpskinToDownskin = sheet5->Cell(rowNum, 18)->GetInteger() == 1;
+		if (regionRow.doMultiConnSwitch) regionRow.doMultiConnOpt = true;
 		//
 		// Add this row to the region-profile structure
 		(*configData).regionProfileList.push_back(regionRow);
