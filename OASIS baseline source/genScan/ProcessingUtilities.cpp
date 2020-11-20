@@ -1,22 +1,12 @@
 #include "ProcessingUtilities.h"
 
-#include <array>
-#include <fstream>
-#include <iostream>
-#include <filesystem>
-#include <msxml6.h>
-#include <conio.h>
-#include "writeScanXML.h"
-#include "ScanPath.h"
-
-#include "constants.h"
-#include "readExcelConfig.h"
-#include "BasicExcel.hpp"
-#include "errorChecks.h"
-#include "io_functions.h"
-
 namespace utils
 {
+
+double PI()
+{
+	return 3.14159265358979323846;
+}
 
 std::array<double, 2> difference(const std::array<double, 2>& v1, const std::array<double, 2>& v2)
 {
@@ -109,12 +99,13 @@ double angleBetween(const std::array<double, 3>& v1, const std::array<double, 3>
 {
 	std::array<double, 3> cross = crossProduct(v1, v2);
 	double angle = std::atan2(magnitude(cross), dotProduct(v1, v2));
-	return angle * 180 / PI;
+	return angle * 180 / PI();
 }
 
 double distance(const std::array<double, 3>& pt, const std::array<double, 3>& lineStartPt, const std::array<double, 3>& lineEndPt, std::array<double,3>& closestPt)
 {
-	std::array<double, 3> SP = difference(pt, lineStartPt), SE = difference(lineEndPt, lineStartPt);
+	std::array<double, 3> SP = difference(pt, lineStartPt);
+	std::array<double, 3> SE = difference(lineEndPt, lineStartPt);
 	double len = magnitude(SE);
 	double dist = dotProduct(SP, SE) / len; // dist = |SP|cos(theta) [SP projected distance on SE]
 	double normDist = dist / len; // normalized the projected distance
@@ -146,89 +137,94 @@ void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig&
 	{
 		// Update each path
 		std::vector<path> newPaths;
-		for (auto& p : t.vecPath)
-		{
-			// Only reorder hatches
-			if (p.type != "hatch")
-			{
-				newPaths.push_back(p);
-				continue;
-			}
-
-			// Get only marked segs (laser on) and jump profile
-			std::vector<segment> markedSegs;
-			std::string jumpProfile = "";
-			for (auto& seg : p.vecSg)
-			{
-				if (seg.isMark) markedSegs.push_back(seg);
-				else if (jumpProfile.empty()) jumpProfile = seg.idSegStyl;
-			}
-
-			// Group segs by sub-region in layer
-			// Multiply-connected optimization
-			std::vector<std::vector<segment>> groupedRegSegs; // <sub-region, segment>
-			if (regInfo[p.tag].doMultiConnOpt)
-				groupedRegSegs = groupSegmentsByRegions(layer, markedSegs);
-			else
-				groupedRegSegs = { markedSegs }; // No grouping
-
-			// Apply striping, keeping sub-region grouping
-			double scanAngle = std::fmod(regInfo[p.tag].layer1hatchAngle + (layerNum - 1) * regInfo[p.tag].hatchLayerRotation, 360) * PI / 180;
-			std::vector<std::vector<std::vector<segment>>> stripedGroupedSegs; // <sub-region, stripe, segment>
-			for (auto& region : groupedRegSegs)
-			{
-				if (regInfo[p.tag].hatchStripeWidth == 0.0)
-					stripedGroupedSegs.push_back({ region }); // No striping
-				else
-					stripedGroupedSegs.push_back(splitSegmentsWithStripes(region, regInfo[p.tag].hatchStripeWidth, scanAngle, bounds.at(p.tag)));
-			}
-
-			// Apply upskin to downskin orientating
-			std::vector<std::vector<std::vector<segment>>> newStripedGroupedSegs;			
-			double layerHeight = configData.layerThickness_mm * layerNum;
-			for (auto& region : stripedGroupedSegs)
-			{
-				if (regInfo[p.tag].doUpskinToDownskin)
-					newStripedGroupedSegs.push_back(reorientSegmentsUpToDownSkin(region, layerHeight, regionMeshes.at(p.tag).first, regionMeshes.at(p.tag).second));
-				else
-					newStripedGroupedSegs.push_back(region);
-			}
-			stripedGroupedSegs = newStripedGroupedSegs;
-
-			// Apply multiply-connected switching algorithm
-			if (regInfo[p.tag].doMultiConnSwitch)
-				stripedGroupedSegs = reorderSegmentsForMultiplyConnectedSwitching(stripedGroupedSegs);
-
-			// Update seg ordering for path
-			std::vector<segment> newSegs;
-			for (auto& region : stripedGroupedSegs)
-			{
-				for (auto& stripe : region)
-				{
-					for (auto& seg : stripe)
-					{
-						// Add jump from prev seg to current seg
-						if (!newSegs.empty())
-						{
-							segment jumpSeg;
-							jumpSeg.isMark = 0;
-							jumpSeg.start = newSegs.back().end;
-							jumpSeg.end = seg.start;
-							jumpSeg.idSegStyl = jumpProfile;
-							newSegs.push_back(jumpSeg);
-						}
-						newSegs.push_back(seg);
-					}
-				}
-			}
-
-			path newPath = p;
-			newPath.vecSg = newSegs;
-			newPaths.push_back(newPath);
-		}
-
+		for (const auto& p : t.vecPath)
+			newPaths.push_back(createUpdatedPath(p, regInfo[p.tag], configData, layer, layerNum, bounds.at(p.tag), regionMeshes.at(p.tag)));
 		t.vecPath = newPaths;
 	}
+}
+
+path createUpdatedPath(const path& origPath, const regionProfile& regInfo, const AMconfig& configData, const layer& layer, const size_t& layerNum,
+					   const std::array<double, 4>& bound, const std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>& regionMesh)
+{
+	// Only reorder hatches
+	if (origPath.type != "hatch")
+		return origPath;
+
+	// Get only marked segs (laser on) and jump profile
+	std::vector<segment> markedSegs;
+	std::string jumpProfile = "";
+	for (auto& seg : origPath.vecSg)
+	{
+		if (seg.isMark) markedSegs.push_back(seg);
+		else if (jumpProfile.empty()) jumpProfile = seg.idSegStyl;
+	}
+
+	// Group segs by sub-region in layer
+	// Multiply-connected optimization
+	std::vector<std::vector<segment>> groupedRegSegs; // <sub-region, segment>
+	if (regInfo.doMultiConnOpt)
+		groupedRegSegs = groupSegmentsByRegions(layer, markedSegs);
+	else
+		groupedRegSegs = { markedSegs }; // No grouping
+
+	// Apply striping, keeping sub-region grouping
+	double scanAngle = std::fmod(regInfo.layer1hatchAngle + (double(layerNum) - 1) * regInfo.hatchLayerRotation, 360) * PI() / 180;
+	std::vector<std::vector<std::vector<segment>>> stripedGroupedSegs; // <sub-region, stripe, segment>
+	for (const auto& region : groupedRegSegs)
+	{
+		if (regInfo.hatchStripeWidth == 0.0)
+			stripedGroupedSegs.push_back({ region }); // No striping
+		else
+			stripedGroupedSegs.push_back(splitSegmentsWithStripes(region, regInfo.hatchStripeWidth, scanAngle, bound));
+	}
+
+	// Apply upskin to downskin orientating
+	std::vector<std::vector<std::vector<segment>>> newStripedGroupedSegs;
+	double layerHeight = configData.layerThickness_mm * double(layerNum);
+	for (const auto& region : stripedGroupedSegs)
+	{
+		if (regInfo.doUpskinToDownskin)
+			newStripedGroupedSegs.push_back(reorientSegmentsUpToDownSkin(region, layerHeight, regionMesh.first, regionMesh.second));
+		else
+			newStripedGroupedSegs.push_back(region);
+	}
+	stripedGroupedSegs = newStripedGroupedSegs;
+
+	// Apply multiply-connected switching algorithm
+	if (regInfo.doMultiConnSwitch)
+		stripedGroupedSegs = reorderSegmentsForMultiplyConnectedSwitching(stripedGroupedSegs);
+
+	// Update seg ordering for path
+	path newPath = origPath;
+	newPath.vecSg = flattenSegmentOrdering(stripedGroupedSegs, jumpProfile);
+
+	return newPath;
+}
+
+std::vector<segment> flattenSegmentOrdering(const std::vector<std::vector<std::vector<segment>>>& stripedGroupedSegs, const std::string& jumpProfile)
+{
+	std::vector<segment> newSegs;
+	for (const auto& region : stripedGroupedSegs)
+	{
+		for (const auto& stripe : region)
+		{
+			for (const auto& seg : stripe)
+			{
+				// Add jump from prev seg to current seg
+				if (!jumpProfile.empty() && !newSegs.empty())
+				{
+					segment jumpSeg;
+					jumpSeg.isMark = 0;
+					jumpSeg.start = newSegs.back().end;
+					jumpSeg.end = seg.start;
+					jumpSeg.idSegStyl = jumpProfile;
+					newSegs.push_back(jumpSeg);
+				}
+				newSegs.push_back(seg);
+			}
+		}
+	}
+	return newSegs;
 }
 
 std::vector<std::vector<segment>> splitSegmentsWithStripes(const std::vector<segment>& hatchSegs, const double& stripeWidth,
@@ -256,92 +252,102 @@ std::vector<std::vector<segment>> splitHatchSegsByStripes(const std::vector<segm
 	for (size_t i = 0; i < stripePts.size() - 1; ++i)
 	{
 		std::vector<segment> segs;
-		const std::array<double, 2>& sPt1 = stripePts[i], sPt2 = stripePts[i + 1];
+		const std::array<double, 2>& sPt1 = stripePts[i];
+		const std::array<double, 2>& sPt2 = stripePts[i + 1];
 		for (auto& s : hatchSegs)
 		{
-			std::array<double, 2> eStart = { s.start.x, s.start.y };
-			std::array<double, 2> eEnd = { s.end.x, s.end.y };
-
-			// Determine if seg in scanDir or opposite
-			std::array<double, 2> segDir = difference(eEnd, eStart);
-			segDir = product(segDir, 1 / magnitude(segDir));
-			bool inScanDir = true;
-			double tol = 1e-8;
-			if (std::fabs(scanDir[0] - segDir[0]) > tol || std::fabs(scanDir[1] - segDir[1]) > tol)
-				inScanDir = false;
-
-			std::array<double, 2> s1InterPt, s2InterPt;
-			bool s1Inter = intersection(eStart, eEnd, sPt1, stripeDir, s1InterPt);
-			bool s2Inter = intersection(eStart, eEnd, sPt2, stripeDir, s2InterPt);
-
-			segment newSeg = s;
-			// Both intersect = path goes through stripe
-			if (s1Inter && s2Inter)
-			{
-				if (inScanDir)
-				{
-					newSeg.start.x = s1InterPt[0];
-					newSeg.start.y = s1InterPt[1];
-					newSeg.end.x = s2InterPt[0];
-					newSeg.end.y = s2InterPt[1];
-				}
-				else
-				{
-					newSeg.start.x = s2InterPt[0];
-					newSeg.start.y = s2InterPt[1];
-					newSeg.end.x = s1InterPt[0];
-					newSeg.end.y = s1InterPt[1];
-				}
-			}
-			// One intersect = path starts/ends in stripe
-			else if (s1Inter)
-			{
-				if (inScanDir)
-				{
-					newSeg.start.x = s1InterPt[0];
-					newSeg.start.y = s1InterPt[1];
-				}
-				else
-				{
-					newSeg.end.x = s1InterPt[0];
-					newSeg.end.y = s1InterPt[1];
-				}
-			}
-			else if (s2Inter)
-			{
-				if (inScanDir)
-				{
-					newSeg.end.x = s2InterPt[0];
-					newSeg.end.y = s2InterPt[1];
-				}
-				else
-				{
-					newSeg.start.x = s2InterPt[0];
-					newSeg.start.y = s2InterPt[1];
-				}
-			}
-			// No intersection = path not in this stripe or path fully in stripe
-			else if (!s1Inter && !s2Inter)
-			{
-				// Check if path fully within stripe. If not, skip path for this stripe
-				// Note: Fully within stripe when length of path is less than stripe width 
-				//		 and distance from point on path to both stripe lines is less than stripe width
-				if (magnitude(difference(eStart, eEnd)) > stripeWidth || distance(eStart, sPt1, stripeDir) > stripeWidth || distance(eStart, sPt2, stripeDir) > stripeWidth)
-					continue;
-			}
-
-			segs.push_back(newSeg);
+			segment newSeg;
+			if (getNewSegmentInStripe(s, sPt1, sPt2, stripeDir, stripeWidth, scanDir, newSeg))
+				segs.push_back(newSeg);
 		}
 		stripeSegs.push_back(segs);
 	}
 	return stripeSegs;
 }
 
+bool getNewSegmentInStripe(const segment& seg, const std::array<double,2>& stripePt1, const std::array<double,2>& stripePt2, 
+						   const std::array<double,2>& stripeDir, const double& stripeWidth, const std::array<double,2>& scanDir, 
+						   segment& newSeg)
+{
+	std::array<double, 2> eStart = { seg.start.x, seg.start.y };
+	std::array<double, 2> eEnd = { seg.end.x, seg.end.y };
+
+	// Determine if seg in scanDir or opposite
+	std::array<double, 2> segDir = difference(eEnd, eStart);
+	segDir = product(segDir, 1 / magnitude(segDir));
+	bool inScanDir = true;
+	double tol = 1e-8;
+	if (std::fabs(scanDir[0] - segDir[0]) > tol || std::fabs(scanDir[1] - segDir[1]) > tol)
+		inScanDir = false;
+
+	std::array<double, 2> s1InterPt;
+	std::array<double, 2> s2InterPt;
+	bool s1Inter = intersection(eStart, eEnd, stripePt1, stripeDir, s1InterPt);
+	bool s2Inter = intersection(eStart, eEnd, stripePt2, stripeDir, s2InterPt);
+
+	newSeg = seg;
+	// Both intersect = path goes through stripe
+	if (s1Inter && s2Inter)
+	{
+		if (inScanDir)
+		{
+			newSeg.start.x = s1InterPt[0];
+			newSeg.start.y = s1InterPt[1];
+			newSeg.end.x = s2InterPt[0];
+			newSeg.end.y = s2InterPt[1];
+		}
+		else
+		{
+			newSeg.start.x = s2InterPt[0];
+			newSeg.start.y = s2InterPt[1];
+			newSeg.end.x = s1InterPt[0];
+			newSeg.end.y = s1InterPt[1];
+		}
+	}
+	// One intersect = path starts/ends in stripe
+	else if (s1Inter)
+	{
+		if (inScanDir)
+		{
+			newSeg.start.x = s1InterPt[0];
+			newSeg.start.y = s1InterPt[1];
+		}
+		else
+		{
+			newSeg.end.x = s1InterPt[0];
+			newSeg.end.y = s1InterPt[1];
+		}
+	}
+	else if (s2Inter)
+	{
+		if (inScanDir)
+		{
+			newSeg.end.x = s2InterPt[0];
+			newSeg.end.y = s2InterPt[1];
+		}
+		else
+		{
+			newSeg.start.x = s2InterPt[0];
+			newSeg.start.y = s2InterPt[1];
+		}
+	}
+	// No intersection = path not in this stripe or path fully in stripe
+	// If path fully within stripe. If not, skip path for this stripe
+	// Note: Fully within stripe when length of path is less than stripe width 
+	//		 and distance from point on path to both stripe lines is less than stripe width
+	else if ((!s1Inter && !s2Inter) &&
+		(magnitude(difference(eStart, eEnd)) > stripeWidth || distance(eStart, stripePt1, stripeDir) > stripeWidth || distance(eStart, stripePt2, stripeDir) > stripeWidth))
+		return false;
+
+	return true;
+}
+
 std::vector<std::array<double, 2>> calculateStripeLinePtsForRegion(const std::array<double, 4>& regBound, const std::array<double, 2>& stripOffsetDir,
 																   const double& stripeWidth)
 {
 	// Determine which corners of bounding box to start and end at based on stripeOffsetDir
-	std::array<double, 2> startPt, endPt;
+	std::array<double, 2> startPt;
+	std::array<double, 2> endPt;
 	if (stripOffsetDir[0] >= 0)
 	{
 		startPt[0] = regBound[0];
@@ -392,18 +398,18 @@ std::vector<std::vector<segment>> groupSegmentsByRegions(const layer& layer, con
 		if (rType == "outer")
 		{
 			// Get segs in this sub-region
-			std::vector<segment> segs;
+			std::vector<segment> newSegs;
 			for (size_t i = 0; i < origPSegs.size(); ++i)
 			{
 				// Check if seg in sub-region
 				if (isInside(r.eList, origPSegs[i].start))
 				{
-					segs.push_back(origPSegs[i]);
+					newSegs.push_back(origPSegs[i]);
 					origPSegs.erase(origPSegs.begin() + i);
 					--i;
 				}
 			}
-			regionSegs.push_back(segs);
+			regionSegs.push_back(newSegs);
 		}
 	}
 	return regionSegs;
@@ -508,14 +514,14 @@ double calculateDistFromPtToTriangle(const std::array<double, 3>& pt, const std:
 	std::array<double, 3> projPt = sum(pt, product(product(triNorm, -1), distFromPtToPlane));
 
 	// Check if projected point is in triangle using barycentric point
-	std::array<double, 3> v1 = difference(triPt3, triPt1), 
-						  v2 = difference(triPt2, triPt1), 
-						  v3 = difference(projPt, triPt1);
-	double dot11 = dotProduct(v1, v1), 
-		   dot12 = dotProduct(v1, v2), 
-		   dot13 = dotProduct(v1, v3), 
-		   dot22 = dotProduct(v2, v2), 
-		   dot23 = dotProduct(v2, v3);
+	std::array<double, 3> v1 = difference(triPt3, triPt1);
+	std::array<double, 3> v2 = difference(triPt2, triPt1);
+	std::array<double, 3> v3 = difference(projPt, triPt1);
+	double dot11 = dotProduct(v1, v1);
+	double dot12 = dotProduct(v1, v2);
+	double dot13 = dotProduct(v1, v3);
+	double dot22 = dotProduct(v2, v2);
+	double dot23 = dotProduct(v2, v3);
 	double invDenom = 1 / (dot11 * dot22 - dot12 * dot12);
 	double u = (dot22 * dot13 - dot12 * dot23) * invDenom;
 	double v = (dot11 * dot23 - dot12 * dot13) * invDenom;
@@ -527,7 +533,8 @@ double calculateDistFromPtToTriangle(const std::array<double, 3>& pt, const std:
 		return magnitude(difference(pt, projPt));
 	// Otherwise, get closest point on triangle edges
 	double edgeDist = DBL_MAX;
-	std::array<double, 3> closeEdgePt, closePt;
+	std::array<double, 3> closeEdgePt;
+	std::array<double, 3> closePt;
 	double e1Dist = distance(projPt, triPt1, triPt2, closePt);
 	if (e1Dist < edgeDist)
 	{
@@ -543,7 +550,6 @@ double calculateDistFromPtToTriangle(const std::array<double, 3>& pt, const std:
 	double e3Dist = distance(projPt, triPt3, triPt1, closePt);
 	if (e3Dist < edgeDist)
 	{
-		edgeDist = e3Dist;
 		closeEdgePt = closePt;
 	}
 	return magnitude(difference(pt, closeEdgePt));

@@ -6,7 +6,7 @@
 namespace utils
 {
 
-const double PI = 3.14159265358979323846;
+double PI();
 
 std::array<double, 2> difference(const std::array<double, 2>& v1, const std::array<double, 2>& v2);
 
@@ -45,12 +45,21 @@ void updateTrajectories(std::vector<trajectory>& trajectoryList, const AMconfig&
 						const std::map<std::string, std::array<double, 4>>& bounds,
 						const std::map<std::string, std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>>& regionMeshes);
 
+path createUpdatedPath(const path& origPath, const regionProfile& regInfo, const AMconfig& configData, const layer& layer, const size_t& layerNum,
+					   const std::array<double, 4>& bound, const std::pair<stl_reader::StlMesh<double, size_t>, std::array<double, 3>>& regionMesh);
+
+std::vector<segment> flattenSegmentOrdering(const std::vector<std::vector<std::vector<segment>>>& stripedGroupedSegs, const std::string& jumpProfile);
+
 std::vector<std::vector<segment>> splitSegmentsWithStripes(const std::vector<segment>& hatchSegs, const double& stripeWidth,
 														   const double& scanAngle, const std::array<double, 4>& bound);
 
 std::vector<std::vector<segment>> splitHatchSegsByStripes(const std::vector<segment>& hatchSegs,
 														  const std::vector<std::array<double, 2>>& stripePts, const std::array<double, 2>& stripeDir,
 														  const double& stripeWidth, const std::array<double, 2>& scanDir);
+
+bool getNewSegmentInStripe(const segment& seg, const std::array<double, 2>& stripePt1, const std::array<double, 2>& stripePt2,
+						   const std::array<double, 2>& stripeDir, const double& stripeWidth, const std::array<double, 2>& scanDir,
+						   segment& newSeg);
 
 std::vector<std::array<double, 2>> calculateStripeLinePtsForRegion(const std::array<double, 4>& regBound, const std::array<double, 2>& stripOffsetDir,
 																   const double& stripeWidth);
