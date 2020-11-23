@@ -99,7 +99,7 @@
       <WarningLevel>Level1</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\shared_files;..\..\stl_reader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\shared_files;.;..\AO_source;..\..\stl_reader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -137,7 +137,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\shared_files;..\..\stl_reader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\shared_files;.;..\AO_source;..\..\stl_reader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -150,6 +150,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\AO_source\ProcessingUtilities.h" />
     <ClInclude Include="..\shared_files\BasicExcel.hpp" />
     <ClInclude Include="..\shared_files\constants.h" />
     <ClInclude Include="..\shared_files\errorChecks.h" />
@@ -157,13 +158,13 @@
     <ClInclude Include="..\shared_files\readExcelConfig.h" />
     <ClInclude Include="clipper.hpp" />
     <ClInclude Include="Layer.h" />
-    <ClInclude Include="ProcessingUtilities.h" />
     <ClInclude Include="readLayerXML.h" />
     <ClInclude Include="ScanPath.h" />
     <ClInclude Include="simple_svg_1.0.0.hpp" />
     <ClInclude Include="writeScanXML.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\AO_source\ProcessingUtilities.cpp" />
     <ClCompile Include="..\shared_files\BasicExcel.cpp" />
     <ClCompile Include="..\shared_files\errorChecks.cpp" />
     <ClCompile Include="..\shared_files\io_functions.cpp" />
@@ -173,7 +174,6 @@
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Level1</WarningLevel>
     </ClCompile>
     <ClCompile Include="Layer.cpp" />
-    <ClCompile Include="ProcessingUtilities.cpp" />
     <ClCompile Include="readLayerXML.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\200008936\Documents\C files\ALSAM3024\shared_files;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

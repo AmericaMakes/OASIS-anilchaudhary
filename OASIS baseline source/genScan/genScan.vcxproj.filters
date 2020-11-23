@@ -48,7 +48,7 @@
     <ClInclude Include="clipper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ProcessingUtilities.h">
+    <ClInclude Include="..\AO_source\ProcessingUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -83,7 +83,7 @@
     <ClCompile Include="clipper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProcessingUtilities.cpp">
+    <ClCompile Include="..\AO_source\ProcessingUtilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
