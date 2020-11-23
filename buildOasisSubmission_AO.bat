@@ -4,4 +4,4 @@ REM This batch file will build the scan path generation code in the docker conta
 
 ECHO **Building AO Oasis Challenge Code**
 
-docker run -v %CD%/:c:/Users/ContainerUser/oasis_AO -it oasissubmission_ao ./compileBaseCode.bat
+docker run -v %CD%/:c:/Users/ContainerUser/oasis_AO -it oasissubmission_ao ./build.bat
