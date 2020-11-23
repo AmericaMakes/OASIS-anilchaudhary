@@ -27,3 +27,5 @@ CD %1
 
 REM Compile the solution
 msbuild "OASIS baseline source/OASIS_baseline.sln" /property:Configuration=Release /property:Platform=x64
+
+XCOPY /y ".\OASIS baseline source\x64\Release\*.exe" .
