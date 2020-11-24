@@ -7,7 +7,7 @@ This project can be cloned using the following command:
 If the program is downloaded from GitHub manually, please run  
 `git submodule update --init --recursive` from the base folder to pull the [stl_reader](https://github.com/sreiter/stl_reader) dependency.
 
-An additional runtime dependency of this program inherited from the Oasis codebase is [Slic3r](https://dl.slic3r.org/win/).
+An additional runtime dependency of this program inherited from the Oasis codebase is [Slic3r](https://dl.slic3r.org/win/) which should be downloaded and extracted to the _slic3r_130_ folder.
 
 This project uses MSBuild tools to build the executables, which can be done automatically using the _build.bat_ file in the base folder. In order to run this build in a Docker container, please set Docker to use Windows containers, then use the following commands:
 ```cmd
