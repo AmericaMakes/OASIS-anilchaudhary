@@ -1,4 +1,5 @@
 # Oasis Submission - Applied Optimization, Inc.
+This Oasis submission was created by Applied Optimization, Inc. in collaboration with Dr. David Corbin and Dr. Abdalla Nassar from the Applied Research Laboratory at Pennsylvania State University.
 
 ## Cloning and building code
 This project can be cloned using the following command:  
